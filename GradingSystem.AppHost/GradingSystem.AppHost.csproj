@@ -1,0 +1,24 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <Sdk Name="Aspire.AppHost.Sdk" Version="9.5.0" />
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net9.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <UserSecretsId>747e906b-ac6e-4a16-9b1a-f30bc8918448</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Aspire.Hosting.AppHost" Version="9.5.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\GradingSystem.Gateway.Api\GradingSystem.Gateway.Api.csproj" />
+    <ProjectReference Include="..\Services\GradingSystem.Services.Exam.Api\GradingSystem.Services.Exam.Api.csproj" />
+    <ProjectReference Include="..\Services\GradingSystem.Services.Grading.Api\GradingSystem.Services.Grading.Api.csproj" />
+    <ProjectReference Include="..\Services\GradingSystem.Services.Submission.Api\GradingSystem.Services.Submission.Api.csproj" />
+  </ItemGroup>
+
+</Project>
