@@ -7,4 +7,5 @@
   <Project Path="GradingSystem.AppHost/GradingSystem.AppHost.csproj" />
   <Project Path="GradingSystem.Gateway.Api/GradingSystem.Gateway.Api.csproj" />
   <Project Path="GradingSystem.ServiceDefaults/GradingSystem.ServiceDefaults.csproj" />
+  <Project Path="GradingSystem.Shared/GradingSystem.Shared.csproj" Id="c5a6ac99-081f-4082-9d34-bc685968410f" />
 </Solution>

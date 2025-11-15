@@ -1,4 +1,9 @@
 using GradingSystem.Gateway.Api.Hubs;
+using Microsoft.AspNetCore.Authentication;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+using System.Text;
+using Yarp.ReverseProxy.Transforms;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -29,15 +34,6 @@ builder.Services.AddAuthentication(options =>
     };
 });
 
-builder.Services.AddAuthorization(options =>
-{
-    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
-    options.AddPolicy("ManagerOnly", policy => policy.RequireRole("Manager"));
-    options.AddPolicy("ModeratorOnly", policy => policy.RequireRole("Moderator"));
-    options.AddPolicy("ExaminerOnly", policy => policy.RequireRole("Examiner"));
-    options.AddPolicy("AdminOrManager", policy => policy.RequireRole("Admin", "Manager"));
-    options.AddPolicy("StaffOnly", policy => policy.RequireRole("Admin", "Manager", "Moderator", "Examiner"));
-});
 
 builder.Services.AddReverseProxy()
     .LoadFromConfig(builder.Configuration.GetSection("ReverseProxy"));
@@ -68,7 +64,7 @@ app.UseCors("AllowAll");
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapReverseProxy()
+app.MapReverseProxy();
 
 app.MapHub<NotificationHub>("/hubs/notifications");
 app.Run();
