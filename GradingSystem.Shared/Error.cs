@@ -8,12 +8,12 @@ namespace GradingSystem.Shared;
 
 public record Error
 {
-    public string ErrorCode { get; }
+    public string Code { get; }
     public string Message { get; }
     public ErrorType Type { get; }
     public Error(string code, string message, ErrorType type)
     {
-        ErrorCode = code;
+        Code = code;
         Message = message;
         Type = type;
     }

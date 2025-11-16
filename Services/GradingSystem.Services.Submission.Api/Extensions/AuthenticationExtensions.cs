@@ -1,9 +1,10 @@
-﻿using Microsoft.AspNetCore.Authentication.JwtBearer;
+﻿using GradingSystem.Services.Submissions.Api.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
 using System.Text;
 
-namespace Evently.Common.Infrastructure.Authentication;
+namespace GradingSystem.Services.Submissions.Api.Extensions;
 
 public static class AuthenticationExtensions
 {

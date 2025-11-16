@@ -8,6 +8,7 @@ firebase-adminsdk.json
 # Ignore all folders named exampleFolder and their contents anywhere
 bin/
 obj/
+postgres-data/
 .containers/
 .azure/
 

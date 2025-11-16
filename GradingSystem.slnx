@@ -1,8 +1,8 @@
 <Solution>
   <Folder Name="/Services/">
-    <Project Path="Services/GradingSystem.Services.Exam.Api/GradingSystem.Services.Exam.Api.csproj" />
-    <Project Path="Services/GradingSystem.Services.Grading.Api/GradingSystem.Services.Grading.Api.csproj" />
-    <Project Path="Services/GradingSystem.Services.Submission.Api/GradingSystem.Services.Submission.Api.csproj" />
+    <Project Path="Services/GradingSystem.Services.Exam.Api/GradingSystem.Services.Exams.Api.csproj" />
+    <Project Path="Services/GradingSystem.Services.Submission.Api/GradingSystem.Services.Submissions.Api.csproj" />
+    <Project Path="Services/GradingSystem.Services.Users.Api/GradingSystem.Services.Users.Api.csproj" />
   </Folder>
   <Project Path="GradingSystem.AppHost/GradingSystem.AppHost.csproj" />
   <Project Path="GradingSystem.Gateway.Api/GradingSystem.Gateway.Api.csproj" />
