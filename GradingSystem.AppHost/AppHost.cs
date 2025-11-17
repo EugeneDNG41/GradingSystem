@@ -11,29 +11,36 @@ var userDb = postgres.AddDatabase("users-db");
 var examDb = postgres.AddDatabase("exams-db");
 var submissionDb = postgres.AddDatabase("submissions-db");
 
-var rabbitMq = builder.AddRabbitMQ("rabbitmq");
+var username = builder.AddParameter("username", secret: true);
+var password = builder.AddParameter("password", secret: true);
+
+var rabbitmq = builder.AddRabbitMQ("rabbitmq", username, password)
+                      .WithManagementPlugin();
 
 var blobs = builder.AddAzureStorage("storage").RunAsEmulator(azurite => azurite.WithDataVolume()).AddBlobs("blobs");
 
-var examApi = builder.AddProject<Projects.GradingSystem_Services_Exams_Api>("gradingsystem-exams-api")
+var examService = builder.AddProject<Projects.GradingSystem_Services_Exams_Api>("exams-service")
     .WithReference(examDb)
     .WaitFor(examDb)
-    .WithReference(rabbitMq)
-    .WaitFor(rabbitMq);
-var submissionApi = builder.AddProject<Projects.GradingSystem_Services_Submissions_Api>("gradingsystem-submissions-api")
+    .WithReference(rabbitmq)
+    .WaitFor(rabbitmq);
+var submissionService = builder.AddProject<Projects.GradingSystem_Services_Submissions_Api>("submissions-service")
     .WithReference(submissionDb)
     .WaitFor(submissionDb)
-    .WithReference(rabbitMq)
-    .WaitFor(rabbitMq);
-var userApi = builder.AddProject<Projects.GradingSystem_Services_Users_Api>("gradingsystem-users-api")
+    .WithReference(rabbitmq)
+    .WaitFor(rabbitmq);
+var userService = builder.AddProject<Projects.GradingSystem_Services_Users_Api>("users-service")
     .WithReference(userDb)
     .WaitFor(userDb)
-    .WithReference(rabbitMq)
-    .WaitFor(rabbitMq);
+    .WithReference(rabbitmq)
+    .WaitFor(rabbitmq);
 
-var gateway = builder.AddProject<Projects.GradingSystem_Gateway_Api>("gradingsystem-gateway-api")
-    .WithReference(userApi)
-    .WithReference(examApi)
-    .WithReference(submissionApi);
+var gateway = builder.AddYarp("gateway")
+    .WithConfiguration(yarp =>
+    {
+        yarp.AddRoute(examService);
+        yarp.AddRoute(submissionService);
+        yarp.AddRoute(userService);
+    });
 
 builder.Build().Run();
