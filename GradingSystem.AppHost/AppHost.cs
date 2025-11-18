@@ -1,8 +1,9 @@
 var builder = DistributedApplication.CreateBuilder(args);
-
-var postgres = builder.AddPostgres("postgres")
+var postgresUsername = builder.AddParameter("postgresusername", secret: true);
+var postgresPassword = builder.AddParameter("postgrespassword", secret: true);
+var postgres = builder.AddPostgres("postgres", postgresUsername, postgresPassword)
     .WithHostPort(5432)
-    .WithBindMount("postgres-data", "/var/lib/postgresql/data").WithPgAdmin(pgAdmin =>
+    .WithDataVolume().WithPgAdmin(pgAdmin =>
     {
         pgAdmin.WithHostPort(5050);
     })
