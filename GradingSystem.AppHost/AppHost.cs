@@ -36,11 +36,12 @@ var userService = builder.AddProject<Projects.GradingSystem_Services_Users_Api>(
     .WaitFor(rabbitmq);
 
 var gateway = builder.AddYarp("gateway")
+    .WithHostPort(8080)
     .WithConfiguration(yarp =>
     {
-        yarp.AddRoute(examService);
-        yarp.AddRoute(submissionService);
-        yarp.AddRoute(userService);
+        yarp.AddRoute("/exams/api/{**catch-all}", examService);
+        yarp.AddRoute("/submissions/api/{**catch-all}", submissionService);
+        yarp.AddRoute("/users/api/{**catch-all}", userService);
     });
 
 builder.Build().Run();
