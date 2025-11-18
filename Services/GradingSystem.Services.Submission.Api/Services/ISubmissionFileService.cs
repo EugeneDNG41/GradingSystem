@@ -5,7 +5,7 @@ namespace GradingSystem.Services.Submissions.Api.Services;
 
 public interface ISubmissionFileService
 {
-    //Task<Result<int>> UploadFile();
+    Task<Result<bool>> UploadFile(IFormFile file);
     Task<Result<UnpackResult>> UnpackAsync(
         string blobName,
         IBlobService blobService,

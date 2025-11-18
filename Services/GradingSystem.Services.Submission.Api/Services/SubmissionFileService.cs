@@ -76,4 +76,26 @@ public class SubmissionFileService(ILogger<SubmissionFileService> logger) : ISub
             }
         }
     }
+
+    public async Task<Result<bool>> UploadFile(IFormFile file)
+    {
+        if (file.Length == 0)
+        {
+            return Result.Failure<bool>(Error.BadRequest("001", "Empty file"));
+        }
+        try
+        {
+            var uploadPath = Path.Combine(Path.GetTempPath(), file.FileName);
+            using (var stream = new FileStream(uploadPath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+            return Result.Success(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Error uploading file {FileName}", file.FileName);
+            return Result.Failure<bool>(Error.Failure("002", "File upload failed"));
+        }
+    }
 }
