@@ -40,6 +40,7 @@ if (rabbitmqEndpoint != null && usersDbConnectionString != null)
     }).UseResourceSetupOnStartup();
 }
 builder.Services.AddScoped<IUserService, UserService>();
+builder.Services.AddScoped<IJwtTokenGenerator, JwtTokenGenerator>();
 builder.Services.AddAuthentication(builder.Configuration);
 
 var app = builder.Build();
