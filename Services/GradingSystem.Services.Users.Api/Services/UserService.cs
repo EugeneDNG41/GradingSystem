@@ -5,8 +5,17 @@ using Wolverine;
 
 namespace GradingSystem.Services.Users.Api.Services;
 
-public class UserService(UsersDbContext dbContext, IMessageBus messageBus) : IUserService
+public class UserService
+    : IUserService
 {
+    
+    private readonly UsersDbContext _dbContext;
+    private readonly IMessageBus _messageBus;
+    public UserService(UsersDbContext dbContext, IMessageBus messageBus)
+    {
+        _dbContext = dbContext;
+        _messageBus = messageBus;
+    }
     public async Task<Result<int>> CreateUserAsync(CreateUserRequest request)
     {
         var user = new User
@@ -16,14 +25,14 @@ public class UserService(UsersDbContext dbContext, IMessageBus messageBus) : IUs
             Password = BCrypt.Net.BCrypt.HashPassword(request.Password),
             Role = request.Role
         };
-        dbContext.Users.Add(user);
-        await dbContext.SaveChangesAsync();
-        await messageBus.PublishAsync(new UserCreated(user.Id, user.Name, user.Email, user.Role.ToString()));
+        _dbContext.Users.Add(user);
+        await _dbContext.SaveChangesAsync();
+        await _messageBus.PublishAsync(new UserCreated(user.Id, user.Name, user.Email, user.Role.ToString()));
         return user.Id;
     }
     public async Task<Result<UserResponse>> GetUserByIdAsync(int id)
     {
-        var user = await dbContext.Users.FindAsync(id);
+        var user = await _dbContext.Users.FindAsync(id);
         if (user is null)
         {
             return Result.Failure<UserResponse>(Error.NotFound("USER40401", "User not found."));

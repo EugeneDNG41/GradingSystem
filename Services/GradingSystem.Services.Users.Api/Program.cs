@@ -2,6 +2,7 @@ using GradingSystem.Services.Users.Api;
 using GradingSystem.Services.Users.Api.Data;
 using GradingSystem.Services.Users.Api.Extensions;
 using GradingSystem.Services.Users.Api.Services;
+using JasperFx.Resources;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Wolverine;
@@ -36,13 +37,13 @@ if (rabbitmqEndpoint != null && usersDbConnectionString != null)
         opts.ListenToRabbitQueue("users-service");
         opts.UseEntityFrameworkCoreTransactions();
         opts.PersistMessagesWithPostgresql(usersDbConnectionString);
-    });
+    }).UseResourceSetupOnStartup();
 }
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddAuthentication(builder.Configuration);
 
 var app = builder.Build();
-//app.ApplyMigrations();
+app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
