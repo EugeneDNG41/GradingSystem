@@ -22,12 +22,25 @@ namespace GradingSystem.Services.Exams.Api.Services
         {
             var exists = await dbContext.Set<ExamExaminer>()
                 .AnyAsync(ee => ee.ExamId == examExaminer.ExamId && ee.UserId == examExaminer.UserId);
-            if (!exists)
+            if (exists)
             {
-                return Result.Failure(Error.NotFound("404","Not Found"));
+                return Result.Failure(Error.Conflict("EE40901","This user already assigned to this exam"));
             }
-            await messageBus.InvokeAsync(new ExaminerExists(examExaminer.UserId));
-            throw new NotImplementedException();
+            var examExists = await dbContext.Set<Exam>()
+                .AnyAsync(e => e.Id == examExaminer.ExamId);
+            if (!examExists)
+            {
+                return Result.Failure(Error.NotFound("EX40401", "Exam not found"));
+            }
+            var userExists = await dbContext.Set<Examiner>()
+                .AnyAsync(u => u.Id == examExaminer.UserId);
+            if (!userExists)
+            {
+                return Result.Failure(Error.NotFound("EX40402", "Examiner not found"));
+            }
+                dbContext.Set<ExamExaminer>().Add(examExaminer);
+            dbContext.SaveChanges();
+            return Result.Success();
         }
 
     }

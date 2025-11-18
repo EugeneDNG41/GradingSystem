@@ -1,6 +1,7 @@
 using GradingSystem.Services.Exams.Api;
 using GradingSystem.Services.Exams.Api.Data;
 using GradingSystem.Services.Exams.Api.Extensions;
+using GradingSystem.Services.Exams.Api.Services;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Wolverine;
@@ -17,7 +18,6 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
-
 var examsDbConnectionString = builder.Configuration.GetConnectionString("exams-db");
 builder.Services.AddDbContext<ExamsDbContext>(options => options.UseNpgsql(examsDbConnectionString));
 
@@ -38,7 +38,10 @@ if (rabbitmqEndpoint != null && examsDbConnectionString != null)
     });
 }
 builder.Services.AddAuthentication(builder.Configuration);
-
+builder.Services.AddScoped<IExamService, ExamService>();
+builder.Services.AddScoped<IRubricService, RubricService>();
+builder.Services.AddScoped<ISemesterService,SemesterService>();
+builder.Services.AddScoped<IExamExaminerService, ExamExaminerService>();
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();

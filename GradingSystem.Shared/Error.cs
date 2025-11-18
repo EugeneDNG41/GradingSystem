@@ -27,6 +27,8 @@ public record Error
         new(code, message, ErrorType.Unauthorized);
     public static Error Forbidden(string code, string message) =>
         new(code, message, ErrorType.Forbidden);
+    public static Error Conflict(string code, string message) =>
+        new(code, message, ErrorType.Conflict);
 
     public static readonly Error None = new(string.Empty, string.Empty, ErrorType.Failure);
     public static readonly Error NullValue = new(

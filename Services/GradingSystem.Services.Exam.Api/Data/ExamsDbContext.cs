@@ -8,7 +8,8 @@ public class ExamsDbContext(DbContextOptions<ExamsDbContext> options) : DbContex
     public DbSet<Rubric> Rubrics => Set<Rubric>();
     public DbSet<Examiner> Examiners => Set<Examiner>();
     public DbSet<Exam> Exams => Set<Exam>();
-    public DbSet<ExamExaminer> Questions => Set<ExamExaminer>();
+    public DbSet<ExamExaminer> ExamExaminers => Set<ExamExaminer>();
+    public DbSet<Semester> Semesters => Set<Semester>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ExamsDbContext).Assembly);
