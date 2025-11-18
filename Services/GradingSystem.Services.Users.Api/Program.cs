@@ -2,6 +2,7 @@ using GradingSystem.Services.Users.Api;
 using GradingSystem.Services.Users.Api.Data;
 using GradingSystem.Services.Users.Api.Extensions;
 using GradingSystem.Services.Users.Api.Services;
+using GradingSystem.Shared.Contracts;
 using JasperFx.Resources;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -28,11 +29,9 @@ if (rabbitmqEndpoint != null && usersDbConnectionString != null)
 {
     builder.Host.UseWolverine(opts =>
     {
-        //opts.PublishAllMessages().ToRabbitExchange("grading-system", exchange =>
-        //{
-        //    exchange.ExchangeType = ExchangeType.Direct;
-        //});
         
+        opts.PublishMessage<UserCreated>().ToRabbitQueue("exams-service");
+
         opts.UseRabbitMq(new Uri(rabbitmqEndpoint)).AutoProvision().EnableWolverineControlQueues();
         opts.ListenToRabbitQueue("users-service");
         opts.UseEntityFrameworkCoreTransactions();

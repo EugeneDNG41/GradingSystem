@@ -3,6 +3,7 @@ using System;
 using GradingSystem.Services.Exams.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GradingSystem.Services.Exams.Api.Migrations
 {
     [DbContext(typeof(ExamsDbContext))]
-    partial class ExamsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251118065632_InitExam_DB")]
+    partial class InitExam_DB
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -58,27 +61,7 @@ namespace GradingSystem.Services.Exams.Api.Migrations
 
                     b.HasKey("ExamId", "UserId");
 
-                    b.HasIndex("UserId");
-
                     b.ToTable("ExamExaminers", (string)null);
-                });
-
-            modelBuilder.Entity("GradingSystem.Services.Exams.Api.Data.Examiner", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("Examiners", (string)null);
                 });
 
             modelBuilder.Entity("GradingSystem.Services.Exams.Api.Data.Rubric", b =>
@@ -148,12 +131,6 @@ namespace GradingSystem.Services.Exams.Api.Migrations
                     b.HasOne("GradingSystem.Services.Exams.Api.Data.Exam", null)
                         .WithMany()
                         .HasForeignKey("ExamId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("GradingSystem.Services.Exams.Api.Data.Examiner", null)
-                        .WithMany()
-                        .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
                 });

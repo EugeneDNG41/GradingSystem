@@ -6,6 +6,9 @@ namespace GradingSystem.Services.Exams.Api.Data;
 public class ExamsDbContext(DbContextOptions<ExamsDbContext> options) : DbContext(options)
 {
     public DbSet<Rubric> Rubrics => Set<Rubric>();
+    public DbSet<Examiner> Examiners => Set<Examiner>();
+    public DbSet<Exam> Exams => Set<Exam>();
+    public DbSet<ExamExaminer> Questions => Set<ExamExaminer>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(ExamsDbContext).Assembly);

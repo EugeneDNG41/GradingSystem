@@ -9,7 +9,7 @@ internal static class SwaggerExtensions
     {
         services.AddSwaggerGen(options =>
         {
-            options.SwaggerDoc("v1", new OpenApiInfo { Title = "GradingSystem.Users", Version = "v1" });
+            options.SwaggerDoc("v1", new OpenApiInfo { Title = "GradingSystem.Exams", Version = "v1" });
             var securityScheme = new OpenApiSecurityScheme
             {
                 Name = "JWT Authentication",

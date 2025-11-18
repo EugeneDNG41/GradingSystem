@@ -21,5 +21,9 @@ internal sealed class RubricConfiguration : IEntityTypeConfiguration<Rubric>
 
         builder.Property(r => r.OrderIndex)
             .IsRequired();
+
+        builder.HasOne<Exam>()                         
+            .WithMany()
+            .HasForeignKey(x => x.ExamId);
     }
 }

@@ -6,5 +6,8 @@
         public string Criteria { get; set; } = null!;
         public decimal MaxScore { get; set; }
         public int OrderIndex { get; set; }
+
+        public int ExamId { get; set; }
+
     }
 }
