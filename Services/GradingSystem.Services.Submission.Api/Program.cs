@@ -17,6 +17,7 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
+builder.AddAzureBlobServiceClient("blobs");
 
 var submissionsDbConnectionString = builder.Configuration.GetConnectionString("submissions-db");
 builder.Services.AddDbContext<SubmissionsDbContext>(options => options.UseNpgsql(submissionsDbConnectionString));
@@ -40,6 +41,8 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
 builder.Services.AddAuthentication(builder.Configuration);
 
 var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();
 //app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();

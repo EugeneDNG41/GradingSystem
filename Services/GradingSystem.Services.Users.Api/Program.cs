@@ -43,6 +43,8 @@ builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddAuthentication(builder.Configuration);
 
 var app = builder.Build();
+app.UseSwagger();
+app.UseSwaggerUI();
 app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
