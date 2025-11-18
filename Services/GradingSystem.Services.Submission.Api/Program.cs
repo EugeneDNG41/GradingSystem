@@ -1,6 +1,8 @@
 using GradingSystem.Services.Submissions.Api;
 using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Extensions;
+using GradingSystem.Services.Submissions.Api.Services;
+using GradingSystem.Shared.Services.BlobStorage;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Wolverine;
@@ -18,6 +20,8 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
 builder.AddAzureBlobServiceClient("blobs");
+
+builder.Services.AddBlobService();
 
 var submissionsDbConnectionString = builder.Configuration.GetConnectionString("submissions-db");
 builder.Services.AddDbContext<SubmissionsDbContext>(options => options.UseNpgsql(submissionsDbConnectionString));
@@ -38,12 +42,13 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
         opts.PersistMessagesWithPostgresql(submissionsDbConnectionString);
     });
 }
+builder.Services.AddScoped<ISubmissionFileService, SubmissionFileService>();
 builder.Services.AddAuthentication(builder.Configuration);
 
 var app = builder.Build();
 app.UseSwagger();
 app.UseSwaggerUI();
-//app.ApplyMigrations();
+app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.

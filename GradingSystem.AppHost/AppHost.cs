@@ -2,7 +2,7 @@ var builder = DistributedApplication.CreateBuilder(args);
 
 var postgres = builder.AddPostgres("postgres")
     .WithHostPort(5432)
-    .WithBindMount("postgres-data", "/var/lib/postgresql/data").WithPgAdmin(pgAdmin =>
+    .WithDataVolume().WithPgAdmin(pgAdmin =>
     {
         pgAdmin.WithHostPort(5050);
     })
