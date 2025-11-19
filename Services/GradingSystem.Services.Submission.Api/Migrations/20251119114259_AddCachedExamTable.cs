@@ -1,5 +1,4 @@
-﻿using System;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
 #nullable disable
@@ -12,17 +11,6 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropColumn(
-                name: "Content",
-                table: "SubmissionAssets");
-
-            migrationBuilder.AddColumn<string>(
-                name: "BlobName",
-                table: "SubmissionAssets",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
             migrationBuilder.CreateTable(
                 name: "CachedExams",
                 columns: table => new
@@ -45,17 +33,6 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
         {
             migrationBuilder.DropTable(
                 name: "CachedExams");
-
-            migrationBuilder.DropColumn(
-                name: "BlobName",
-                table: "SubmissionAssets");
-
-            migrationBuilder.AddColumn<byte[]>(
-                name: "Content",
-                table: "SubmissionAssets",
-                type: "bytea",
-                nullable: false,
-                defaultValue: new byte[0]);
         }
     }
 }
