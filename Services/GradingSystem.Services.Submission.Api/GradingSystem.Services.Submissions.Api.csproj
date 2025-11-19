@@ -17,6 +17,7 @@
 		<PackageReference Include="WolverineFx.EntityFrameworkCore" Version="5.2.0" />
 		<PackageReference Include="WolverineFx.Postgresql" Version="5.2.0" />
 		<PackageReference Include="WolverineFx.RabbitMQ" Version="5.2.0" />
+		<PackageReference Include="SharpCompress" Version="0.33.0" />
 	</ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\..\GradingSystem.ServiceDefaults\GradingSystem.ServiceDefaults.csproj" />

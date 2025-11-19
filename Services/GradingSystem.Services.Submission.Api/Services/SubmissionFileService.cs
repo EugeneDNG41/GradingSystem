@@ -1,79 +1,62 @@
-﻿using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+﻿using GradingSystem.Services.Submissions.Api.Data;
+using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 using GradingSystem.Shared;
-using System.IO.Compression;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
-public class SubmissionFileService(ILogger<SubmissionFileService> logger) : ISubmissionFileService
+public class SubmissionFileService(
+    IBlobService blobService,
+    ISubmissionIngestionService ingestionService,
+    ISubmissionValidationService validationService,
+    ILogger<SubmissionFileService> logger) : ISubmissionFileService
 {
+    private readonly IBlobService _blobService = blobService;
+    private readonly ISubmissionIngestionService _ingestionService = ingestionService;
+    private readonly ISubmissionValidationService _validationService = validationService;
     private readonly ILogger<SubmissionFileService> _logger = logger;
 
-    public async Task<Result<UnpackResult>> UnpackAsync(string blobName, IBlobService blobService, CancellationToken cancellationToken = default)
+    public async Task<Result<UnpackResult>> UnpackAsync(
+        SubmissionBatch submissionBatch,
+        CancellationToken cancellationToken = default)
     {
-        var result = new UnpackResult();
-        var tempZipPath = string.Empty;
-        var extractPath = string.Empty;
+        IngestionResult? ingestionResult = null;
 
         try
         {
-            //Download the blob
-            var zipStream = await blobService.DownloadAsync(blobName, cancellationToken);
-            //Validate before unpacking
-            //Save to temp file
-            tempZipPath = Path.Combine(Path.GetTempPath(), $"{Guid.NewGuid()}.zip");
-            var tempFileStream = File.Create(tempZipPath);
+            await using var archiveStream = await _blobService.DownloadAsync(
+                submissionBatch.SubmissionFile.BlobName,
+                cancellationToken);
 
-            await zipStream.CopyToAsync(tempFileStream, cancellationToken);
-
-            //Extract ZIP file
-            extractPath = Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString());
-            Directory.CreateDirectory(extractPath);
-
-            _logger.LogInformation("Extracting ZIP file to: {ExtractPath}", extractPath);
-            ZipFile.ExtractToDirectory(tempZipPath, extractPath);
-            return new UnpackResult
+            var ingestion = await _ingestionService.IngestAsync(archiveStream, cancellationToken);
+            if (ingestion.IsFailure)
             {
-                IsSuccess = true,
-                ExtractedFiles = Directory.GetFiles(extractPath).Select(f => new ExtractedFile
-                {
-                    OriginalPath = f,
-                    FileName = Path.GetFileName(f),
-                    RenamedFileName = $"{Guid.NewGuid()}{Path.GetExtension(f)}",
-                    FileSize = new FileInfo(f).Length,
-                    FileExtension = Path.GetExtension(f)
-                }).ToList(),
-                Validation = new ValidationResult
-                {
-                    IsValid = true
+                return Result.Failure<UnpackResult>(ingestion.Error);
+            }
 
-                },
-            };
+            ingestionResult = ingestion.Value;
+
+            var validationOutcome = await _validationService.ValidateAsync(
+                submissionBatch,
+                ingestionResult.ExtractedFiles,
+                cancellationToken);
+
+            return Result.Success(new UnpackResult
+            {
+                IsSuccess = validationOutcome.Validation.IsValid,
+                ExtractedFiles = ingestionResult.ExtractedFiles.ToList(),
+                Validation = validationOutcome.Validation
+            });
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error unpacking submission file from blob {BlobName}", blobName);
-            result.IsSuccess = false;
-            result.ErrorMessage = ex.Message;
-            return result;
+            _logger.LogError(ex, "Error processing submission batch {BatchId}.", submissionBatch.Id);
+            return Result.Failure<UnpackResult>(Error.Failure(
+                "Submissions.Process.Unexpected",
+                "Failed to process submission archive."));
         }
         finally
         {
-            // Clean up temporary files
-            try
-            {
-                if (!string.IsNullOrEmpty(tempZipPath) && File.Exists(tempZipPath))
-                {
-                    File.Delete(tempZipPath);
-                }
-                if (!string.IsNullOrEmpty(extractPath) && Directory.Exists(extractPath))
-                {
-                    Directory.Delete(extractPath, recursive: true);
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Error cleaning up temporary files");
-            }
+            CleanupTempDirectory(ingestionResult?.ExtractionPath);
         }
     }
 
@@ -83,19 +66,38 @@ public class SubmissionFileService(ILogger<SubmissionFileService> logger) : ISub
         {
             return Result.Failure<bool>(Error.BadRequest("001", "Empty file"));
         }
+
         try
         {
             var uploadPath = Path.Combine(Path.GetTempPath(), file.FileName);
-            using (var stream = new FileStream(uploadPath, FileMode.Create))
-            {
-                await file.CopyToAsync(stream);
-            }
+            await using var stream = new FileStream(uploadPath, FileMode.Create);
+            await file.CopyToAsync(stream);
             return Result.Success(true);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, "Error uploading file {FileName}", file.FileName);
             return Result.Failure<bool>(Error.Failure("002", "File upload failed"));
+        }
+    }
+
+    private void CleanupTempDirectory(string? path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return;
+        }
+
+        try
+        {
+            if (Directory.Exists(path))
+            {
+                Directory.Delete(path, recursive: true);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "Error cleaning temporary directory {Path}", path);
         }
     }
 }

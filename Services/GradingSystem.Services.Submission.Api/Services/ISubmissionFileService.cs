@@ -1,4 +1,4 @@
-﻿using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+﻿using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Shared;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
@@ -7,8 +7,7 @@ public interface ISubmissionFileService
 {
     Task<Result<bool>> UploadFile(IFormFile file);
     Task<Result<UnpackResult>> UnpackAsync(
-        string blobName,
-        IBlobService blobService,
+        SubmissionBatch submissionBatch,
         CancellationToken cancellationToken = default);
 }
 public class UnpackResult
@@ -22,6 +21,7 @@ public class UnpackResult
 public class ExtractedFile
 {
     public string OriginalPath { get; set; } = string.Empty;
+    public string RelativePath { get; set; } = string.Empty;
     public string FileName { get; set; } = string.Empty;
     public string RenamedFileName { get; set; } = string.Empty;
     public long FileSize { get; set; }

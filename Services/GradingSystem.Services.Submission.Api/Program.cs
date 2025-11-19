@@ -43,6 +43,8 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
         opts.PersistMessagesWithPostgresql(submissionsDbConnectionString);
     });
 }
+builder.Services.AddScoped<ISubmissionIngestionService, SubmissionIngestionService>();
+builder.Services.AddScoped<ISubmissionValidationService, SubmissionValidationService>();
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileService>();
 builder.Services.AddScoped<ISubmissionUploadService, SubmissionUploadService>();
 builder.Services.AddAuthentication(builder.Configuration);
