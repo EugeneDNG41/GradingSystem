@@ -2,6 +2,7 @@ using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Models;
 using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 using GradingSystem.Shared;
+using Microsoft.EntityFrameworkCore;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
@@ -23,6 +24,16 @@ public sealed class SubmissionUploadService(
         {
             return Result.Failure<SubmissionUploadResponse>(validationResult.Error);
         }
+
+        // var examExists = await _dbContext.CachedExams
+        //     .AsNoTracking()
+        //     .AnyAsync(e => e.Id == request.ExamId, cancellationToken);
+        // if (!examExists)
+        // {
+        //     return Result.Failure<SubmissionUploadResponse>(Error.NotFound(
+        //         "Submissions.Upload.ExamNotFound",
+        //         "Exam information is not available. Please try again later."));
+        // }
 
         var fileExtension = Path.GetExtension(request.Archive!.FileName);
         var blobName = $"submissions/{request.ExamId}/{Guid.NewGuid():N}{fileExtension}";
