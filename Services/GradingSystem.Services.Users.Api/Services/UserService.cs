@@ -45,6 +45,21 @@ public class UserService
         var response = new UserResponse(user.Id, user.Name, user.Email, user.Role.ToString());
         return response;
     }
+    public async Task<Result<List<UserListItem>>> GetUsersAsync()
+    {
+        var users = await _dbContext.Users
+            .OrderBy(u => u.Name)
+            .ToListAsync();
+
+        var result = users.Select(u => new UserListItem(
+            u.Id,
+            u.Name,
+            u.Email,
+            u.Role.ToString()
+        )).ToList();
+
+        return result;
+    }
     public async Task<Result<LoginResponse>> LoginAsync(LoginRequest request)
     {
         var user = await _dbContext.Users
