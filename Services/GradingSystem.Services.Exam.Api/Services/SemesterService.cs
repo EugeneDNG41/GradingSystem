@@ -36,6 +36,32 @@ namespace GradingSystem.Services.Exams.Api.Services
                 return Result.Failure<SemesterResponse>(Error.NotFound("S40401", "Semester not found"));
 
             return Result.Success(new SemesterResponse(
+
+        public async Task<Result<List<SemesterResponse>>> GetSemestersAsync()
+        {
+            var semesters = await _db.Semesters
+                .OrderBy(s => s.StartDate)
+                .ToListAsync();
+
+            var result = semesters.Select(s => new SemesterResponse(
+                s.Id,
+                s.Name,
+                s.StartDate,
+                s.EndDate
+            )).ToList();
+
+            return result;
+        }
+
+        public async Task<Result<SemesterResponse>> GetSemesterByIdAsync(int id)
+        {
+            var semester = await _db.Semesters.FindAsync(id);
+            if (semester is null)
+            {
+                return Result.Failure<SemesterResponse>(Error.NotFound("SEM40401", "Semester not found."));
+            }
+
+            var response = new SemesterResponse(
                 semester.Id,
                 semester.Name,
                 semester.StartDate,
@@ -88,6 +114,8 @@ namespace GradingSystem.Services.Exams.Api.Services
             await _db.SaveChangesAsync();
 
             return Result.Success(true);
+            );
+            return response;
         }
     }
 }

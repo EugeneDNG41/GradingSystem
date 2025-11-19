@@ -4,15 +4,18 @@ using Microsoft.AspNetCore.Routing;
 
 namespace GradingSystem.Services.Exams.Api.Endpoints;
 
-internal sealed class GetSemesters : IEndpoint
+internal sealed class GetRubrics : IEndpoint
 {
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
-        app.MapGet("/semesters", async (ISemesterService service) =>
+        app.MapGet("/rubrics", async (
+            int? examId,
+            IRubricService service
+        ) =>
         {
-            var result = await service.GetSemestersAsync();
+            var result = await service.GetRubricsAsync(examId);
             return result.Match(Results.Ok, CustomResults.Problem);
-        }).WithTags("semesters");
+        }).WithTags("rubrics");
     }
 }
 

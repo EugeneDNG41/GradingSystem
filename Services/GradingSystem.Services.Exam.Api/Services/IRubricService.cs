@@ -10,5 +10,6 @@ namespace GradingSystem.Services.Exams.Api.Services
         Task<Result> DeleteRubricAsync(int id);
         Task<Result<RubricResponse>> GetRubricByIdAsync(int id);
         Task<Result<List<RubricResponse>>> GetRubricsByExamIdAsync(int examId);
+        Task<Result<List<RubricResponse>>> GetRubricsAsync(int? examId);
     }
 }

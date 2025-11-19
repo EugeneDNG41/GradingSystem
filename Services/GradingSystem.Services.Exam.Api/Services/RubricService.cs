@@ -105,6 +105,27 @@ namespace GradingSystem.Services.Exams.Api.Services
                 .ToListAsync();
 
             return list;
+
+        public async Task<Result<List<RubricResponse>>> GetRubricsAsync(int? examId)
+        {
+            var query = _db.Rubrics.AsQueryable();
+
+            if (examId.HasValue)
+                query = query.Where(r => r.ExamId == examId.Value);
+
+            var rubrics = await query
+                .OrderBy(r => r.OrderIndex)
+                .ToListAsync();
+
+            var result = rubrics.Select(r => new RubricResponse(
+                r.Id,
+                r.Criteria,
+                r.MaxScore,
+                r.OrderIndex,
+                r.ExamId
+            )).ToList();
+
+            return result;
         }
     }
 }
