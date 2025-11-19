@@ -1,17 +1,23 @@
 ﻿using GradingSystem.Services.Exams.Api.Data;
 using GradingSystem.Services.Exams.Api.Models;
 using GradingSystem.Shared;
+using GradingSystem.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Wolverine;
+using Wolverine.Runtime;
 
 namespace GradingSystem.Services.Exams.Api.Services
 {
     public class SemesterService : ISemesterService
     {
         private readonly ExamsDbContext _db;
+        private readonly IMessageBus _messageBus;
 
-        public SemesterService(ExamsDbContext db)
+        public SemesterService(ExamsDbContext db, IMessageBus messageBus)
         {
             _db = db;
+            _messageBus = messageBus;
+
         }
 
         public async Task<Result<int>> CreateSemesterAsync(CreateSemesterRequest request)
@@ -25,8 +31,27 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             _db.Semesters.Add(semester);
             await _db.SaveChangesAsync();
-
+            await _messageBus.PublishAsync(
+                new SemesterCreated(
+                    semester.Id,
+                    semester.Name,
+                    semester.StartDate,
+                    semester.EndDate
+                )
+            );
             return semester.Id;
+        }
+        public async Task<Result<SemesterResponse>> GetSemesterByIdAsync(int id)
+        {
+            var semester = await _db.Semesters.FindAsync(id);
+
+            if (semester is null)
+                return Result.Failure<SemesterResponse>(Error.NotFound("S40401", "Semester not found"));
+
+            return Result.Success(new SemesterResponse(id,
+                semester.Name,
+                semester.StartDate,
+                semester.EndDate));
         }
 
         public async Task<Result<List<SemesterResponse>>> GetSemestersAsync()
@@ -45,21 +70,54 @@ namespace GradingSystem.Services.Exams.Api.Services
             return result;
         }
 
-        public async Task<Result<SemesterResponse>> GetSemesterByIdAsync(int id)
+ 
+
+        public async Task<Result<List<SemesterResponse>>> GetAllSemestersAsync()
+        {
+            var list = await _db.Semesters
+                .Select(x => new SemesterResponse(
+                    x.Id,
+                    x.Name,
+                    x.StartDate,
+                    x.EndDate))
+                .ToListAsync();
+
+            return Result.Success(list);
+        }
+
+        public async Task<Result<SemesterResponse>> UpdateSemesterAsync(int id, UpdateSemesterRequest request)
         {
             var semester = await _db.Semesters.FindAsync(id);
-            if (semester is null)
-            {
-                return Result.Failure<SemesterResponse>(Error.NotFound("SEM40401", "Semester not found."));
-            }
 
-            var response = new SemesterResponse(
+            if (semester is null)
+                return Result.Failure<SemesterResponse>(Error.NotFound("S40401", "Semester not found"));
+
+            semester.Name = request.Name;
+            semester.StartDate = request.StartDate;
+            semester.EndDate = request.EndDate;
+
+            await _db.SaveChangesAsync();
+
+            return Result.Success(new SemesterResponse(
                 semester.Id,
                 semester.Name,
                 semester.StartDate,
                 semester.EndDate
-            );
-            return response;
+            ));
         }
+
+        public async Task<Result<bool>> DeleteSemesterAsync(int id)
+        {
+            var semester = await _db.Semesters.FindAsync(id);
+
+            if (semester is null)
+                return Result.Failure<bool>(Error.NotFound("S40401", "Semester not found"));
+
+            _db.Semesters.Remove(semester);
+            await _db.SaveChangesAsync();
+
+            return Result.Success(true);
+        }
+        }
+        
     }
-}

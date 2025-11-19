@@ -1,6 +1,7 @@
 ﻿using GradingSystem.Services.Exams.Api.Data;
 using GradingSystem.Services.Exams.Api.Models;
 using GradingSystem.Shared;
+using GradingSystem.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
 using Wolverine;
 
@@ -9,11 +10,12 @@ namespace GradingSystem.Services.Exams.Api.Services
     public class ExamService : IExamService
     {
         private readonly ExamsDbContext _db;
+        private readonly IMessageBus _bus;
 
-        public ExamService(ExamsDbContext db)
+        public ExamService(ExamsDbContext db, IMessageBus bus)
         {
             _db = db;
-
+            _bus = bus;
         }
 
         public async Task<Result<int>> CreateExamAsync(CreateExamRequest request)
@@ -35,6 +37,12 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             _db.Exams.Add(exam);
             await _db.SaveChangesAsync();
+            await _bus.PublishAsync(new ExamCreated(
+                exam.Id,
+                exam.Title,
+                exam.SemesterId,
+                exam.DueDate
+            ));
 
             return exam.Id;
         }

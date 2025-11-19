@@ -3,6 +3,7 @@ using System;
 using GradingSystem.Services.Submissions.Api.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace GradingSystem.Services.Submissions.Api.Migrations
 {
     [DbContext(typeof(SubmissionsDbContext))]
-    partial class SubmissionsDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251119131047_GradeEntry")]
+    partial class GradeEntry
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -83,23 +86,6 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("CachedExams", (string)null);
-                });
-
-            modelBuilder.Entity("GradingSystem.Services.Submissions.Api.Data.CachedExaminer", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("integer");
-
-                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.ToTable("CachedExaminers");
                 });
 
             modelBuilder.Entity("GradingSystem.Services.Submissions.Api.Data.CachedSemester", b =>
