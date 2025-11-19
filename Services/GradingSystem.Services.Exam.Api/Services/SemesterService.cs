@@ -1,17 +1,23 @@
 ﻿using GradingSystem.Services.Exams.Api.Data;
 using GradingSystem.Services.Exams.Api.Models;
 using GradingSystem.Shared;
+using GradingSystem.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Wolverine;
+using Wolverine.Runtime;
 
 namespace GradingSystem.Services.Exams.Api.Services
 {
     public class SemesterService : ISemesterService
     {
         private readonly ExamsDbContext _db;
+        private readonly IMessageBus _messageBus;
 
-        public SemesterService(ExamsDbContext db)
+        public SemesterService(ExamsDbContext db, IMessageBus messageBus)
         {
             _db = db;
+            _messageBus = messageBus;
+
         }
 
         public async Task<Result<int>> CreateSemesterAsync(CreateSemesterRequest request)
@@ -25,7 +31,14 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             _db.Semesters.Add(semester);
             await _db.SaveChangesAsync();
-
+            await _messageBus.PublishAsync(
+                new SemesterCreated(
+                    semester.Id,
+                    semester.Name,
+                    semester.StartDate,
+                    semester.EndDate
+                )
+            );
             return semester.Id;
         }
         public async Task<Result<SemesterResponse>> GetSemesterByIdAsync(int id)

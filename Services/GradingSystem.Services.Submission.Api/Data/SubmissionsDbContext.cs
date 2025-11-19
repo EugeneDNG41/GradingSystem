@@ -10,6 +10,8 @@ public class SubmissionsDbContext(DbContextOptions<SubmissionsDbContext> options
     public DbSet<SubmissionAsset> SubmissionAssets => Set<SubmissionAsset>();
     public DbSet<SubmissionViolation> SubmissionViolations => Set<SubmissionViolation>();
     public DbSet<CachedExam> CachedExams => Set<CachedExam>();
+    public DbSet<CachedSemester> CachedSemesters => Set<CachedSemester>();
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SubmissionsDbContext).Assembly);
