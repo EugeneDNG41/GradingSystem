@@ -1,7 +1,8 @@
 ﻿using GradingSystem.Services.Exams.Api.Data;
-using Wolverine;
-using Microsoft.EntityFrameworkCore;
 using GradingSystem.Shared;
+using GradingSystem.Shared.Contracts;
+using Microsoft.EntityFrameworkCore;
+using Wolverine;
 
 namespace GradingSystem.Services.Exams.Api.Services
 {
@@ -40,6 +41,11 @@ namespace GradingSystem.Services.Exams.Api.Services
             }
                 dbContext.Set<ExamExaminer>().Add(examExaminer);
             dbContext.SaveChanges();
+            await messageBus.PublishAsync(new ExaminerAssignedToExam(
+                examExaminer.ExamId,
+                examExaminer.UserId,
+                DateTime.UtcNow
+));
             return Result.Success();
         }
 

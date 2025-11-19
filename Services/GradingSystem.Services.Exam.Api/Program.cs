@@ -33,6 +33,8 @@ if (rabbitmqEndpoint != null && examsDbConnectionString != null)
         //});
         opts.PublishMessage<ExamCreated>().ToRabbitQueue("submissions-service");
         opts.PublishMessage<SemesterCreated>().ToRabbitQueue("submissions-service");
+        opts.PublishMessage<ExaminerAssignedToExam>()
+    .ToRabbitQueue("submissions-service");
 
         opts.UseRabbitMq(new Uri(rabbitmqEndpoint)).AutoProvision().EnableWolverineControlQueues();
         opts.ListenToRabbitQueue("exams-service");

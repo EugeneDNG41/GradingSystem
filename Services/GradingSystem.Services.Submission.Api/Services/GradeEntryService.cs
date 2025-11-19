@@ -16,20 +16,43 @@ namespace GradingSystem.Services.Submissions.Api.Services
 
         public async Task<Result<int>> CreateAsync(CreateGradeEntryRequest request)
         {
-            var entry = await _db.SubmissionEntries.FindAsync(request.SubmissionEntryId);
+            var entry = await _db.SubmissionEntries
+                .Include(e => e.SubmissionBatch)
+                .FirstOrDefaultAsync(e => e.Id == request.SubmissionEntryId);
 
             if (entry is null)
+            {
                 return Result.Failure<int>(Error.NotFound(
                     "SUB404", "Submission entry not found."
                 ));
+            }
+
+            var examId = entry.SubmissionBatch.ExamId;
+
             var existingGrade = await _db.GradeEntries
                 .Where(x => x.SubmissionEntryId == request.SubmissionEntryId
-                            && x.ExaminerId == request.ExaminerId)
+                         && x.ExaminerId == request.ExaminerId)
                 .FirstOrDefaultAsync();
+
             if (existingGrade is not null)
+            {
                 return Result.Failure<int>(Error.Conflict(
-                    "GRD409", "A grade entry by this examiner for the submission entry already exists."
+                    "GRD409",
+                    "A grade entry by this examiner for the submission already exists."
                 ));
+            }
+
+            bool allowed = await _db.AssignedExaminers
+                .AnyAsync(x => x.ExamId == examId
+                            && x.ExaminerId == request.ExaminerId);
+
+            if (!allowed)
+            {
+                return Result.Failure<int>(
+                    Error.Forbidden("NOT_ALLOWED", "You are not assigned to this exam")
+                );
+            }
+
             var grade = new GradeEntry
             {
                 SubmissionEntryId = request.SubmissionEntryId,
@@ -47,6 +70,7 @@ namespace GradingSystem.Services.Submissions.Api.Services
 
             return grade.Id;
         }
+
 
         public async Task<Result<List<GradeEntryResponse>>> GetBySubmissionAsync(int submissionEntryId)
         {
