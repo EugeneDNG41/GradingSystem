@@ -17,6 +17,7 @@ namespace GradingSystem.Services.Exams.Api.Endpoints
                     CustomResults.Problem
                 );
             })
+                .RequireAuthorization()
             .WithTags("exams");
         }
     }
