@@ -2,7 +2,9 @@
 using GradingSystem.Services.Submissions.Api.Models;
 using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 using GradingSystem.Shared;
+using GradingSystem.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
+using Wolverine;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
@@ -10,13 +12,15 @@ public sealed class SubmissionUploadService(
     IBlobService blobService,
     SubmissionsDbContext dbContext,
     ISubmissionFileService submissionFileService,
-    ILogger<SubmissionUploadService> logger) : ISubmissionUploadService
+    ILogger<SubmissionUploadService> logger,
+    IMessageBus messageBus) : ISubmissionUploadService
 {
     private static readonly string[] AllowedExtensions = [".rar"];
     private readonly IBlobService _blobService = blobService;
     private readonly SubmissionsDbContext _dbContext = dbContext;
     private readonly ISubmissionFileService _submissionFileService = submissionFileService;
     private readonly ILogger<SubmissionUploadService> _logger = logger;
+    private readonly IMessageBus _messageBus = messageBus;
 
     public async Task<Result<SubmissionUploadResponse>> UploadAsync(
         UploadSubmissionRequest request,
@@ -84,6 +88,21 @@ public sealed class SubmissionUploadService(
 
             await _dbContext.SaveChangesAsync(cancellationToken);
 
+            if (unpackResult.Value.ValidationOutcome?.Violations.Count > 0)
+            {
+                try
+                {
+                    await PublishViolationsEventAsync(
+                        submissionBatch,
+                        unpackResult.Value.ValidationOutcome!,
+                        cancellationToken);
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Không thể phát sự kiện vi phạm cho batch {BatchId}", submissionBatch.Id);
+                }
+            }
+
             return Result.Success(new SubmissionUploadResponse
             {
                 Id = submissionBatch.Id,
@@ -140,6 +159,68 @@ public sealed class SubmissionUploadService(
         }
 
         return Result.Success();
+    }
+
+    private async Task PublishViolationsEventAsync(
+        SubmissionBatch batch,
+        ValidationOutcome validationOutcome,
+        CancellationToken cancellationToken)
+    {
+        var students = validationOutcome.Entries
+            .Select(entry =>
+            {
+                var entryViolations = validationOutcome.Violations
+                    .Where(v => v.SubmissionEntryId == entry.Id)
+                    .Select(v => new SubmissionViolationEnvelope(
+                        v.Id,
+                        v.Type.ToString(),
+                        v.Severity,
+                        v.Description))
+                    .ToList();
+
+                if (entryViolations.Count == 0)
+                {
+                    return null;
+                }
+
+                var metadata = SubmissionEntryMetadataSerializer.Deserialize(entry.Metadata) ?? new SubmissionEntryMetadata
+                {
+                    StudentCode = entry.StudentCode
+                };
+
+                return new StudentViolationEnvelope(
+                    entry.Id,
+                    entry.StudentCode,
+                    entryViolations,
+                    new SubmissionEntryMetadataEnvelope(
+                        metadata.StudentCode,
+                        metadata.TotalFiles,
+                        metadata.TotalSize,
+                        metadata.Files.Select(f => new SubmissionEntryFileMetadataEnvelope(
+                            f.RelativePath,
+                            f.Size,
+                            f.Extension,
+                            f.Category.ToString())).ToList(),
+                        metadata.MissingItems,
+                        metadata.ExtraItems));
+            })
+            .Where(x => x is not null)
+            .Select(x => x!)
+            .ToList();
+
+        if (students.Count == 0)
+        {
+            return;
+        }
+
+        var message = new SubmissionViolationsDetected(
+            batch.Id,
+            batch.ExamId,
+            batch.UploadedByUserId,
+            DateTime.UtcNow,
+            students);
+
+        await _messageBus.PublishAsync(message);
     }
 }
 

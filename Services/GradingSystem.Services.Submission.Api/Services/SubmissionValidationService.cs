@@ -1,20 +1,32 @@
 using GradingSystem.Services.Submissions.Api.Data;
+using GradingSystem.Services.Submissions.Api.Options;
 using Microsoft.EntityFrameworkCore;
-using System.Text.Json;
+using Microsoft.Extensions.Options;
+using System.Text.RegularExpressions;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
 public sealed class SubmissionValidationService(
     SubmissionsDbContext dbContext,
-    ILogger<SubmissionValidationService> logger) : ISubmissionValidationService
+    ILogger<SubmissionValidationService> logger,
+    IOptions<SubmissionValidationOptions> validationOptions) : ISubmissionValidationService
 {
-    private static readonly HashSet<string> RequiredDocExtensions = new(StringComparer.OrdinalIgnoreCase) { ".doc", ".docx", ".pdf" };
-    private static readonly HashSet<string> RequiredSourceExtensions = new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".csproj", ".sln", ".cs", ".java", ".cpp", ".py", ".js" };
+    private static readonly HashSet<string> RequiredSourceExtensions = new(StringComparer.OrdinalIgnoreCase) { ".zip", ".rar", ".csproj", ".sln", ".cs" };
     private static readonly HashSet<string> ForbiddenExtensions = new(StringComparer.OrdinalIgnoreCase) { ".exe", ".bat", ".cmd", ".msi", ".dll", ".scr" };
     private const long MaxTotalSizeBytes = 200 * 1024 * 1024; // 200MB
+    private const string ForbiddenFileCode = "FORBIDDEN_FILE";
+    private const string ExtraFileCode = "EXTRA_FILE";
+    private const string InvalidFolderCode = "INVALID_FOLDER";
 
     private readonly SubmissionsDbContext _dbContext = dbContext;
     private readonly ILogger<SubmissionValidationService> _logger = logger;
+    private readonly SubmissionValidationOptions _options = validationOptions.Value;
+    private readonly Regex _studentFolderRegex = new(validationOptions.Value.StudentFolderPattern, RegexOptions.Compiled | RegexOptions.IgnoreCase);
+    private readonly HashSet<string> _allowedStudentExtraExtensions =
+        validationOptions.Value.AllowedStudentExtraExtensions?
+            .Where(ext => !string.IsNullOrWhiteSpace(ext))
+            .Select(NormalizeExtension)
+            .ToHashSet(StringComparer.OrdinalIgnoreCase) ?? new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
     public async Task<ValidationOutcome> ValidateAsync(
         SubmissionBatch batch,
@@ -26,7 +38,6 @@ public sealed class SubmissionValidationService(
         {
             TotalFiles = filesList.Count,
             TotalSize = filesList.Sum(f => f.FileSize),
-            HasDatFile = filesList.Any(f => string.Equals(f.FileExtension, ".dat", StringComparison.OrdinalIgnoreCase)),
             IsValid = true
         };
 
@@ -46,7 +57,7 @@ public sealed class SubmissionValidationService(
             .Select(f => new
             {
                 File = f,
-                StudentCode = DetermineStudentCode(f, rootFolder)
+                StudentCode = DetermineStudentCode(f, rootFolder, _studentFolderRegex)
             })
             .ToList();
 
@@ -54,6 +65,8 @@ public sealed class SubmissionValidationService(
             .Where(x => !string.IsNullOrWhiteSpace(x.StudentCode))
             .GroupBy(x => x.StudentCode!, x => x.File)
             .ToDictionary(g => g.Key, g => g.ToList());
+
+        validation.StudentCount = groupedByStudent.Count;
 
         var orphanFiles = annotatedFiles
             .Where(x => string.IsNullOrWhiteSpace(x.StudentCode))
@@ -73,25 +86,19 @@ public sealed class SubmissionValidationService(
 
         foreach (var (studentCode, studentFiles) in groupedByStudent)
         {
+            var metadata = BuildMetadata(studentCode, studentFiles);
+
             var entry = new SubmissionEntry
             {
                 SubmissionBatchId = batch.Id,
                 StudentCode = studentCode,
                 ExtractedAt = DateTime.UtcNow,
-                Metadata = JsonSerializer.Serialize(new
-                {
-                    Files = studentFiles.Select(f => new
-                    {
-                        f.RelativePath,
-                        f.FileSize,
-                        f.FileExtension
-                    })
-                })
+                Metadata = SubmissionEntryMetadataSerializer.Serialize(metadata)
             };
 
             entries.Add(entry);
 
-            ValidateStudentFolder(studentCode, studentFiles, entry, validation, violations);
+            ValidateStudentFolder(studentCode, studentFiles, entry, validation, violations, metadata);
         }
 
         await PersistAsync(entries, violations, cancellationToken);
@@ -145,61 +152,89 @@ public sealed class SubmissionValidationService(
         }
     }
 
-    private static string? DetermineStudentCode(ExtractedFile file, string? rootFolder)
+    private static string? DetermineStudentCode(ExtractedFile file, string? rootFolder, Regex studentFolderRegex)
     {
         var relativePath = file.RelativePath ?? string.Empty;
         var parts = relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
 
-        // Cần ít nhất root/root/mssv
-        if (parts.Length < 3 || string.IsNullOrWhiteSpace(rootFolder))
-            return null;
-
-        // Kiểm tra bắt buộc phải có 2 root liên tiếp
-        if (!parts[0].Equals(rootFolder, StringComparison.OrdinalIgnoreCase) ||
-            !parts[1].Equals(rootFolder, StringComparison.OrdinalIgnoreCase))
+        if (parts.Length == 0)
         {
             return null;
         }
 
-        // Mã số sinh viên là phần thứ 3
-        return parts[2];
+        var index = 0;
+
+        if (!string.IsNullOrWhiteSpace(rootFolder))
+        {
+            while (index < parts.Length &&
+                   parts[index].Equals(rootFolder, StringComparison.OrdinalIgnoreCase))
+            {
+                index++;
+            }
+        }
+
+        if (parts.Length - index < 2)
+        {
+            return null;
+        }
+
+        string? fallback = null;
+        for (var i = index; i < parts.Length - 1; i++)
+        {
+            var segment = parts[i];
+            if (studentFolderRegex.IsMatch(segment))
+            {
+                return segment;
+            }
+
+            fallback = segment;
+        }
+
+        return fallback;
     }
 
 
     private static string? DetectRootFolder(IReadOnlyCollection<ExtractedFile> files)
     {
-        return files
+        var grouping = files
             .Select(f => f.RelativePath)
             .Where(path => !string.IsNullOrWhiteSpace(path) && path.Contains('/'))
             .Select(path => path!.Split('/', StringSplitOptions.RemoveEmptyEntries).FirstOrDefault())
             .Where(segment => !string.IsNullOrWhiteSpace(segment))
             .GroupBy(segment => segment!)
             .OrderByDescending(g => g.Count())
-            .FirstOrDefault()
-            ?.Key;
+            .FirstOrDefault();
+
+        if (grouping is null)
+        {
+            return null;
+        }
+
+        return grouping.Count() > 1 ? grouping.Key : null;
     }
 
-    private static void ValidateStudentFolder(
+    private void ValidateStudentFolder(
         string studentCode,
         List<ExtractedFile> files,
         SubmissionEntry entry,
         ValidationResult validation,
-        List<SubmissionViolation> violations)
+        List<SubmissionViolation> violations,
+        SubmissionEntryMetadata metadata)
     {
-        bool hasDoc = files.Any(f => RequiredDocExtensions.Contains(f.FileExtension));
-        bool hasSource = files.Any(f => RequiredSourceExtensions.Contains(f.FileExtension));
+        var sourceFiles = files.Where(f => RequiredSourceExtensions.Contains(f.FileExtension)).ToList();
         var forbiddenFiles = files.Where(f => ForbiddenExtensions.Contains(f.FileExtension)).ToList();
+        var extraFiles = files
+            .Where(f =>
+                !RequiredSourceExtensions.Contains(f.FileExtension) &&
+                !ForbiddenExtensions.Contains(f.FileExtension) &&
+                !IsAllowedStudentExtra(f))
+            .ToList();
 
-        if (!hasDoc)
+        if (!_studentFolderRegex.IsMatch(studentCode))
         {
-            AddViolation(entry, validation, violations, ViolationType.MissingContent,
-                $"Sinh viên {studentCode} thiếu file báo cáo (.doc, .docx, .pdf).");
-        }
-
-        if (!hasSource)
-        {
-            AddViolation(entry, validation, violations, ViolationType.MissingContent,
-                $"Sinh viên {studentCode} thiếu mã nguồn.");
+            AddViolation(entry, validation, violations, ViolationType.InvalidFormat,
+                BuildViolationMessage(InvalidFolderCode,
+                    $"Thư mục '{studentCode}' không đúng định dạng MSSV (pattern {_options.StudentFolderPattern})."));
         }
 
         if (forbiddenFiles.Count > 0)
@@ -207,18 +242,78 @@ public sealed class SubmissionValidationService(
             foreach (var forbidden in forbiddenFiles)
             {
                 AddViolation(entry, validation, violations, ViolationType.UnauthorizedResources,
-                    $"File '{forbidden.RelativePath}' có định dạng bị cấm ({forbidden.FileExtension}).");
+                    BuildViolationMessage(ForbiddenFileCode,
+                        $"File '{forbidden.RelativePath}' có định dạng bị cấm ({forbidden.FileExtension})."));
             }
         }
 
-        foreach (var extraFile in files.Where(f =>
-                     !RequiredDocExtensions.Contains(f.FileExtension) &&
-                     !RequiredSourceExtensions.Contains(f.FileExtension) &&
-                     !ForbiddenExtensions.Contains(f.FileExtension)))
+        if (extraFiles.Count > 0)
         {
-            validation.Warnings.Add($"Sinh viên {studentCode} có file phụ '{extraFile.RelativePath}'.");
+            metadata.ExtraItems.AddRange(extraFiles.Select(f => f.RelativePath ?? f.FileName));
+
+            if (_options.FlagExtraFilesAsViolations)
+            {
+                foreach (var extraFile in extraFiles)
+                {
+                    AddViolation(entry, validation, violations, ViolationType.InvalidFormat,
+                        BuildViolationMessage(ExtraFileCode,
+                            $"File '{extraFile.RelativePath}' nằm ngoài danh mục được phép."));
+                }
+            }
+            else
+            {
+                foreach (var extraFile in extraFiles)
+                {
+                    validation.Warnings.Add($"Sinh viên {studentCode} có file phụ '{extraFile.RelativePath}'.");
+                }
+            }
         }
     }
+
+    private static SubmissionEntryMetadata BuildMetadata(string studentCode, List<ExtractedFile> files)
+    {
+        var metadata = new SubmissionEntryMetadata
+        {
+            StudentCode = studentCode,
+            TotalFiles = files.Count,
+            TotalSize = files.Sum(f => f.FileSize),
+            Files = files.Select(f => new SubmissionEntryFileMetadata
+            {
+                RelativePath = string.IsNullOrWhiteSpace(f.RelativePath) ? f.FileName : f.RelativePath!,
+                Size = f.FileSize,
+                Extension = f.FileExtension,
+                Category = CategorizeFile(f)
+            }).ToList()
+        };
+
+        return metadata;
+    }
+
+    private static SubmissionEntryFileCategory CategorizeFile(ExtractedFile file)
+    {
+        if (RequiredSourceExtensions.Contains(file.FileExtension))
+        {
+            return SubmissionEntryFileCategory.Source;
+        }
+
+        if (ForbiddenExtensions.Contains(file.FileExtension))
+        {
+            return SubmissionEntryFileCategory.Forbidden;
+        }
+
+        return SubmissionEntryFileCategory.Extra;
+    }
+
+    private static string BuildViolationMessage(string code, string message) =>
+        $"[{code}] {message}";
+
+    private static string NormalizeExtension(string raw) =>
+        string.IsNullOrWhiteSpace(raw)
+            ? string.Empty
+            : raw.StartsWith('.') ? raw : $".{raw}";
+
+    private bool IsAllowedStudentExtra(ExtractedFile file) =>
+        _allowedStudentExtraExtensions.Contains(NormalizeExtension(file.FileExtension));
 
     private static void AddViolation(
         SubmissionEntry entry,

@@ -1,8 +1,10 @@
 using GradingSystem.Services.Submissions.Api;
 using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Extensions;
+using GradingSystem.Services.Submissions.Api.Options;
 using GradingSystem.Services.Submissions.Api.Services;
 using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+using GradingSystem.Shared.Contracts;
 using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
@@ -23,6 +25,7 @@ builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAss
 builder.AddAzureBlobServiceClient("blobs");
 
 builder.Services.AddBlobService();
+builder.Services.Configure<SubmissionValidationOptions>(builder.Configuration.GetSection("SubmissionValidation"));
 
 var submissionsDbConnectionString = builder.Configuration.GetConnectionString("submissions-db");
 builder.Services.AddDbContext<SubmissionsDbContext>(options => options.UseNpgsql(submissionsDbConnectionString));
@@ -36,6 +39,8 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
         //{
         //    exchange.ExchangeType = ExchangeType.Direct;
         //});
+
+        opts.PublishMessage<SubmissionViolationsDetected>().ToRabbitQueue("violations-service");
 
         opts.UseRabbitMq(new Uri(rabbitmqEndpoint)).AutoProvision().EnableWolverineControlQueues();
         opts.ListenToRabbitQueue("submissions-service");
