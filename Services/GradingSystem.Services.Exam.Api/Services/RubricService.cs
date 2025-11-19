@@ -37,5 +37,32 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             return rubric.Id;
         }
+        public async Task<Result> UpdateRubricAsync(int id, UpdateRubricRequest request)
+        {
+            var rubric = await _db.Rubrics.FindAsync(id);
+
+            if (rubric == null)
+                return Result.Failure(Error.NotFound("RUB404", "Rubric not found."));
+
+            rubric.Criteria = request.Criteria;
+            rubric.MaxScore = request.MaxScore;
+            rubric.OrderIndex = request.OrderIndex;
+
+            await _db.SaveChangesAsync();
+            return Result.Success();
+        }
+
+        public async Task<Result> DeleteRubricAsync(int id)
+        {
+            var rubric = await _db.Rubrics.FindAsync(id);
+
+            if (rubric == null)
+                return Result.Failure(Error.NotFound("RUB404", "Rubric not found."));
+
+            _db.Rubrics.Remove(rubric);
+            await _db.SaveChangesAsync();
+
+            return Result.Success();
+        }
     }
 }

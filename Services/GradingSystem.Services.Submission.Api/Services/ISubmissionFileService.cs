@@ -1,5 +1,5 @@
-﻿using GradingSystem.Shared;
-using GradingSystem.Shared.Services.BlobStorage;
+﻿using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+using GradingSystem.Shared;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 

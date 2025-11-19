@@ -2,7 +2,7 @@
 using Azure.Storage.Blobs.Models;
 using Microsoft.Extensions.Logging;
 
-namespace GradingSystem.Shared.Services.BlobStorage;
+namespace GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 public class BlobService(
     BlobServiceClient blobServiceClient,
     ILogger<BlobService> logger) : IBlobService
