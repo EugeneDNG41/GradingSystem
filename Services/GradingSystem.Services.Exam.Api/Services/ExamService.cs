@@ -2,6 +2,7 @@
 using GradingSystem.Services.Exams.Api.Models;
 using GradingSystem.Shared;
 using Microsoft.EntityFrameworkCore;
+using Wolverine;
 
 namespace GradingSystem.Services.Exams.Api.Services
 {
@@ -12,6 +13,7 @@ namespace GradingSystem.Services.Exams.Api.Services
         public ExamService(ExamsDbContext db)
         {
             _db = db;
+
         }
 
         public async Task<Result<int>> CreateExamAsync(CreateExamRequest request)
@@ -35,6 +37,63 @@ namespace GradingSystem.Services.Exams.Api.Services
             await _db.SaveChangesAsync();
 
             return exam.Id;
+        }
+        public async Task<Result<ExamDetailResponse>> GetExamByIdAsync(int id)
+        {
+            var exam = await _db.Exams
+                .FirstOrDefaultAsync(e => e.Id == id);
+
+            if (exam == null)
+                return Result.Failure<ExamDetailResponse>(
+                    Error.NotFound("EXAM404", "Exam not found"));
+
+            var semester = await _db.Semesters
+                .FirstOrDefaultAsync(s => s.Id == exam.SemesterId);
+
+            if (semester == null)
+                return Result.Failure<ExamDetailResponse>(
+                    Error.NotFound("SEM404", "Semester not found"));
+
+            var semesterInfo = new SemesterInfo(
+                semester.Id,
+                semester.Name,
+                semester.StartDate,
+                semester.EndDate
+            );
+
+            var rubrics = await _db.Rubrics
+                .Where(r => r.ExamId == exam.Id)
+                .Select(r => new RubricInfo(
+                    r.Id,
+                    r.Criteria,
+                    r.MaxScore,
+                    r.OrderIndex
+                ))
+                .ToListAsync();
+
+            var examinerIds = await _db.ExamExaminers
+                .Where(x => x.ExamId == exam.Id)
+                .Select(x => x.UserId)
+                .ToListAsync();
+
+            var examiners = await _db.Examiners
+                .Where(ex => examinerIds.Contains(ex.Id))
+                .Select(ex => new ExaminerInfo(
+                    ex.Id,
+                    ex.Name    
+                ))
+                .ToListAsync();
+
+            var response = new ExamDetailResponse(
+                exam.Id,
+                exam.Title,
+                exam.DueDate,
+                semesterInfo,
+                rubrics,
+                examiners
+            );
+
+            return response;
         }
     }
 }
