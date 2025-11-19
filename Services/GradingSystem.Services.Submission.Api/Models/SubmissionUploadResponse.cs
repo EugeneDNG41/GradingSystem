@@ -1,4 +1,5 @@
 using GradingSystem.Services.Submissions.Api.Data;
+using GradingSystem.Services.Submissions.Api.Services;
 
 namespace GradingSystem.Services.Submissions.Api.Models;
 
@@ -10,6 +11,7 @@ public sealed class SubmissionUploadResponse
     public int ExamId { get; init; }
     public int UploadedByUserId { get; init; }
     public string? Notes { get; init; }
+    public ValidationResult? Validation { get; init; }
     public SubmissionUploadFileResponse File { get; init; } = null!;
 }
 

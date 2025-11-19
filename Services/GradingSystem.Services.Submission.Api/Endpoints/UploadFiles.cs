@@ -24,13 +24,15 @@ internal sealed class UploadFiles : IEndpoint
             }
 
             var uploadResult = await submissionUploadService.UploadAsync(
-                request,
-                userIdResult.Value,
-                cancellationToken);
+            request,
+            userIdResult.Value,
+            cancellationToken);
 
             return uploadResult.Match(
                 response => Results.Created($"/submissions/batches/{response.Id}", response),
                 error => CustomResults.Problem(error));
+
+
         })
         .Accepts<UploadSubmissionRequest>("multipart/form-data")
         .DisableAntiforgery()
