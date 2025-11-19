@@ -6,4 +6,6 @@ public interface IGradeEntryService
 {
     Task<Result<int>> CreateAsync(CreateGradeEntryRequest request);
     Task<Result<List<GradeEntryResponse>>> GetBySubmissionAsync(int submissionEntryId);
+    Task<Result<List<GradeEntryResponse>>> GetAllAsync(int? examinerId);
+
 }

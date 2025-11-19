@@ -22,7 +22,14 @@ namespace GradingSystem.Services.Submissions.Api.Services
                 return Result.Failure<int>(Error.NotFound(
                     "SUB404", "Submission entry not found."
                 ));
-
+            var existingGrade = await _db.GradeEntries
+                .Where(x => x.SubmissionEntryId == request.SubmissionEntryId
+                            && x.ExaminerId == request.ExaminerId)
+                .FirstOrDefaultAsync();
+            if (existingGrade is not null)
+                return Result.Failure<int>(Error.Conflict(
+                    "GRD409", "A grade entry by this examiner for the submission entry already exists."
+                ));
             var grade = new GradeEntry
             {
                 SubmissionEntryId = request.SubmissionEntryId,
@@ -58,6 +65,37 @@ namespace GradingSystem.Services.Submissions.Api.Services
 
             return Result.Success(list);
         }
+        public async Task<Result<List<GradeEntryResponse>>> GetAllAsync(int? examinerId)
+        {
+            var query = _db.GradeEntries.AsQueryable();
+
+            if (examinerId is not null)
+            {
+                var existingExaminer = await _db.CachedExaminers.FindAsync(examinerId.Value);
+                if (existingExaminer is null)
+                {
+                    return Result.Failure<List<GradeEntryResponse>>(Error.NotFound(
+                        "EXM404", "Examiner not found."
+                    ));
+                }
+                query = query.Where(g => g.ExaminerId == examinerId);
+            }
+
+            var list = await query
+                .OrderByDescending(g => g.GradedAt)
+                .Select(g => new GradeEntryResponse(
+                    g.Id,
+                    g.SubmissionEntryId,
+                    g.ExaminerId,
+                    g.Score,
+                    g.Notes,
+                    g.GradedAt
+                ))
+                .ToListAsync();
+
+            return Result.Success(list);
+        }
+
     }
 
 }
