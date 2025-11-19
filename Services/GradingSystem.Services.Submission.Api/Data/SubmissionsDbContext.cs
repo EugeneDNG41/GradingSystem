@@ -11,6 +11,7 @@ public class SubmissionsDbContext(DbContextOptions<SubmissionsDbContext> options
     public DbSet<SubmissionViolation> SubmissionViolations => Set<SubmissionViolation>();
     public DbSet<CachedExam> CachedExams => Set<CachedExam>();
     public DbSet<CachedSemester> CachedSemesters => Set<CachedSemester>();
+    public DbSet<CachedExaminer> CachedExaminers => Set<CachedExaminer>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
