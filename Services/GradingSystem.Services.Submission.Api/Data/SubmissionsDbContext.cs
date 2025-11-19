@@ -12,7 +12,7 @@ public class SubmissionsDbContext(DbContextOptions<SubmissionsDbContext> options
     public DbSet<CachedExam> CachedExams => Set<CachedExam>();
     public DbSet<CachedSemester> CachedSemesters => Set<CachedSemester>();
     public DbSet<CachedExaminer> CachedExaminers => Set<CachedExaminer>();
-
+    public DbSet<GradeEntry> GradeEntries => Set<GradeEntry>();
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.ApplyConfigurationsFromAssembly(typeof(SubmissionsDbContext).Assembly);
