@@ -13,19 +13,19 @@ public class ExamCreatedHandler
 
     public async Task Handle(ExamCreated message)
     {
-        //bool exists = await _db.Exams.AnyAsync(x => x.Id == message.Id);
-        //if (exists)
-        //    return;
+        bool exists = await _db.CachedExams.AnyAsync(x => x.Id == message.Id);
+        if (exists)
+            return;
 
-        //var Exam = new Exam
-        //{
-        //    Id = message.Id,
-        //    Titile = message.Title,
-        //    SemesterId = message.SemesterId,
-        //    DueDate = message.DueDate
-        //};
+        var CachedExams = new CachedExam
+        {
+            Id = message.Id,
+            Title = message.Title,
+            SemesterId = message.SemesterId,
+            DueDate = message.DueDate
+        };
 
-        //_db.Exams.Add(Exam);
-        //await _db.SaveChangesAsync();
+        _db.CachedExams.Add(CachedExams);
+        await _db.SaveChangesAsync();
     }
 }
