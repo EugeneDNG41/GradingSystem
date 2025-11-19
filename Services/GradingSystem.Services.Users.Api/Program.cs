@@ -31,6 +31,7 @@ if (rabbitmqEndpoint != null && usersDbConnectionString != null)
     {
         
         opts.PublishMessage<UserCreated>().ToRabbitQueue("exams-service");
+        opts.PublishMessage<UserCreated>().ToRabbitQueue("submissions-service");
 
         opts.UseRabbitMq(new Uri(rabbitmqEndpoint)).AutoProvision().EnableWolverineControlQueues();
         opts.ListenToRabbitQueue("users-service");
