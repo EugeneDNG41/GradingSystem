@@ -12,7 +12,6 @@ namespace GradingSystem.Services.Exams.Api.Services
         Task<Result<SemesterResponse>> UpdateSemesterAsync(int id, UpdateSemesterRequest request);
         Task<Result<bool>> DeleteSemesterAsync(int id);
         Task<Result<List<SemesterResponse>>> GetSemestersAsync();
-        Task<Result<SemesterResponse>> GetSemesterByIdAsync(int id);
     }
 
 }

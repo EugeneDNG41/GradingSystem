@@ -105,6 +105,7 @@ namespace GradingSystem.Services.Exams.Api.Services
                 .ToListAsync();
 
             return list;
+        }
 
         public async Task<Result<List<RubricResponse>>> GetRubricsAsync(int? examId)
         {
