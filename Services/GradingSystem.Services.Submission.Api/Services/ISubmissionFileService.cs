@@ -15,6 +15,7 @@ public class UnpackResult
     public bool IsSuccess { get; set; }
     public List<ExtractedFile> ExtractedFiles { get; set; } = new();
     public ValidationResult Validation { get; set; } = new();
+    public ValidationOutcome? ValidationOutcome { get; set; }
     public string? ErrorMessage { get; set; }
 }
 
@@ -35,5 +36,5 @@ public class ValidationResult
     public List<string> Warnings { get; set; } = new();
     public int TotalFiles { get; set; }
     public long TotalSize { get; set; }
-    public bool HasDatFile { get; set; }
+    public int StudentCount { get; set; }
 }

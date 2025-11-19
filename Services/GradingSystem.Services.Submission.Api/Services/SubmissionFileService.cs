@@ -44,7 +44,8 @@ public class SubmissionFileService(
             {
                 IsSuccess = validationOutcome.Validation.IsValid,
                 ExtractedFiles = ingestionResult.ExtractedFiles.ToList(),
-                Validation = validationOutcome.Validation
+                Validation = validationOutcome.Validation,
+                ValidationOutcome = validationOutcome
             });
         }
         catch (Exception ex)

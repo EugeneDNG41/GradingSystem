@@ -31,8 +31,6 @@ internal sealed class UploadFiles : IEndpoint
             return uploadResult.Match(
                 response => Results.Created($"/submissions/batches/{response.Id}", response),
                 error => CustomResults.Problem(error));
-
-
         })
         .Accepts<UploadSubmissionRequest>("multipart/form-data")
         .DisableAntiforgery()
