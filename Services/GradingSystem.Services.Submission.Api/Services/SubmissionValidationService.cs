@@ -3,6 +3,7 @@ using GradingSystem.Services.Submissions.Api.Options;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using System.Text.RegularExpressions;
+using System.IO;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
@@ -282,30 +283,64 @@ public sealed class SubmissionValidationService(
                 RelativePath = string.IsNullOrWhiteSpace(f.RelativePath) ? f.FileName : f.RelativePath!,
                 Size = f.FileSize,
                 Extension = f.FileExtension,
-                Category = CategorizeFile(f)
+                Category = CategorizeFile(studentCode, f)
             }).ToList()
         };
 
         return metadata;
     }
 
-    private static SubmissionEntryFileCategory CategorizeFile(ExtractedFile file)
+    private static SubmissionEntryFileCategory CategorizeFile(string studentCode, ExtractedFile file)
     {
-        if (RequiredSourceExtensions.Contains(file.FileExtension))
+        if (IsSolutionArchive(studentCode, file))
         {
-            return SubmissionEntryFileCategory.Source;
+            return SubmissionEntryFileCategory.SolutionPackage;
         }
 
-        if (ForbiddenExtensions.Contains(file.FileExtension))
-        {
-            return SubmissionEntryFileCategory.Forbidden;
-        }
-
-        return SubmissionEntryFileCategory.Extra;
+        return SubmissionEntryFileCategory.Attachment;
     }
 
     private static string BuildViolationMessage(string code, string message) =>
         $"[{code}] {message}";
+    private static bool IsSolutionArchive(string studentCode, ExtractedFile file)
+    {
+        if (!string.Equals(Path.GetFileName(file.FileName), "solution.zip", StringComparison.OrdinalIgnoreCase) &&
+            !string.Equals(Path.GetFileName(file.RelativePath ?? string.Empty), "solution.zip", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        var segments = GetPathSegments(file);
+        var studentIndex = FindStudentSegmentIndex(segments, studentCode);
+        if (studentIndex < 0)
+        {
+            return false;
+        }
+
+        return segments.Length > studentIndex + 2 &&
+               segments[studentIndex + 1].Equals("0", StringComparison.OrdinalIgnoreCase) &&
+               segments[^1].Equals("solution.zip", StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static string[] GetPathSegments(ExtractedFile file)
+    {
+        var relativePath = file.RelativePath ?? string.Empty;
+        return relativePath.Split('/', StringSplitOptions.RemoveEmptyEntries);
+    }
+
+    private static int FindStudentSegmentIndex(string[] segments, string studentCode)
+    {
+        for (var i = 0; i < segments.Length; i++)
+        {
+            if (segments[i].Equals(studentCode, StringComparison.OrdinalIgnoreCase))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
 
     private static string NormalizeExtension(string raw) =>
         string.IsNullOrWhiteSpace(raw)
