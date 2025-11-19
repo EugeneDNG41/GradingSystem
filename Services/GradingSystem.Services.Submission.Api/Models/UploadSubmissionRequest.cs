@@ -6,7 +6,6 @@ public class UploadSubmissionRequest
 {
     public IFormFile? Archive { get; set; }
     public int ExamId { get; set; }
-    public int UploadedByUserId { get; set; }
     public string? Notes { get; set; }
 }
 
