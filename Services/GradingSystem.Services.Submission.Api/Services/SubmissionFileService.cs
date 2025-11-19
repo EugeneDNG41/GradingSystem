@@ -1,6 +1,7 @@
 ﻿using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 using GradingSystem.Shared;
+using System.Linq;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
@@ -8,11 +9,13 @@ public class SubmissionFileService(
     IBlobService blobService,
     ISubmissionIngestionService ingestionService,
     ISubmissionValidationService validationService,
+    ISubmissionAssetService assetService,
     ILogger<SubmissionFileService> logger) : ISubmissionFileService
 {
     private readonly IBlobService _blobService = blobService;
     private readonly ISubmissionIngestionService _ingestionService = ingestionService;
     private readonly ISubmissionValidationService _validationService = validationService;
+    private readonly ISubmissionAssetService _assetService = assetService;
     private readonly ILogger<SubmissionFileService> _logger = logger;
 
     public async Task<Result<UnpackResult>> UnpackAsync(
@@ -39,6 +42,17 @@ public class SubmissionFileService(
                 submissionBatch,
                 ingestionResult.ExtractedFiles,
                 cancellationToken);
+
+            var assetResult = await _assetService.PersistAssetsAsync(
+                submissionBatch,
+                validationOutcome.Entries.Select(e => e.Id).ToList(),
+                ingestionResult.ExtractedFiles,
+                cancellationToken);
+
+            if (assetResult.IsFailure)
+            {
+                return Result.Failure<UnpackResult>(assetResult.Error);
+            }
 
             return Result.Success(new UnpackResult
             {

@@ -10,6 +10,8 @@ internal sealed class SubmissionEntryMetadata
     public List<SubmissionEntryFileMetadata> Files { get; set; } = new();
     public List<string> MissingItems { get; set; } = new();
     public List<string> ExtraItems { get; set; } = new();
+    public int? SolutionAssetId { get; set; }
+    public List<int> AttachmentAssetIds { get; set; } = new();
 }
 
 internal sealed class SubmissionEntryFileMetadata
@@ -22,7 +24,8 @@ internal sealed class SubmissionEntryFileMetadata
 
 internal enum SubmissionEntryFileCategory
 {
-    Report,
+    SolutionPackage,
+    Attachment,
     Source,
     Forbidden,
     Extra
@@ -46,7 +49,17 @@ internal static class SubmissionEntryMetadataSerializer
             return null;
         }
 
-        return JsonSerializer.Deserialize<SubmissionEntryMetadata>(json, SerializerOptions);
+        var metadata = JsonSerializer.Deserialize<SubmissionEntryMetadata>(json, SerializerOptions);
+        if (metadata is null)
+        {
+            return null;
+        }
+
+        metadata.AttachmentAssetIds ??= new List<int>();
+        metadata.MissingItems ??= new List<string>();
+        metadata.ExtraItems ??= new List<string>();
+        metadata.Files ??= new List<SubmissionEntryFileMetadata>();
+        return metadata;
     }
 }
 
