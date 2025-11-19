@@ -1,90 +1,63 @@
-﻿using GradingSystem.Services.Submissions.Api.Data;
+﻿using GradingSystem.Services.Submissions.Api.Extensions;
 using GradingSystem.Services.Submissions.Api.Models;
-using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+using GradingSystem.Services.Submissions.Api.Services;
+using GradingSystem.Shared;
 using Microsoft.AspNetCore.Mvc;
+using System.Security.Claims;
 
 namespace GradingSystem.Services.Submissions.Api.Endpoints;
 
 internal sealed class UploadFiles : IEndpoint
 {
-    private static readonly string[] AllowedExtensions = [".rar"];
-
     public void MapEndpoint(IEndpointRouteBuilder app)
     {
         app.MapPost("/submissions/upload", async (
             [FromForm] UploadSubmissionRequest request,
-            IBlobService blobService,
-            SubmissionsDbContext dbContext,
+            ClaimsPrincipal user,
+            ISubmissionUploadService submissionUploadService,
             CancellationToken cancellationToken) =>
         {
-            if (request.Archive is null || request.Archive.Length == 0)
+            var userIdResult = GetUserId(user);
+            if (userIdResult.IsFailure)
             {
-                return Results.BadRequest(new { error = "Archive file is required." });
+                return CustomResults.Problem(Result.Failure(userIdResult.Error));
             }
 
-            if (request.ExamId <= 0)
-            {
-                return Results.BadRequest(new { error = "ExamId must be greater than zero." });
-            }
+            var uploadResult = await submissionUploadService.UploadAsync(
+                request,
+                userIdResult.Value,
+                cancellationToken);
 
-            if (request.UploadedByUserId <= 0)
-            {
-                return Results.BadRequest(new { error = "UploadedByUserId must be greater than zero." });
-            }
-
-            var fileExtension = Path.GetExtension(request.Archive.FileName);
-            if (!AllowedExtensions.Contains(fileExtension, StringComparer.OrdinalIgnoreCase))
-            {
-                return Results.BadRequest(new { error = "Only .rar archives are supported." });
-            }
-
-            var blobName = $"submissions/{request.ExamId}/{Guid.NewGuid():N}{fileExtension}";
-            await using var archiveStream = request.Archive.OpenReadStream();
-
-            var contentType = string.IsNullOrWhiteSpace(request.Archive.ContentType)
-                ? "application/vnd.rar"
-                : request.Archive.ContentType;
-
-            await blobService.UploadAsync(archiveStream, blobName, contentType, cancellationToken);
-
-            var submissionFile = new SubmissionFile
-            {
-                BlobName = blobName,
-                UploadDate = DateTime.UtcNow
-            };
-
-            var submissionBatch = new SubmissionBatch
-            {
-                SubmissionFile = submissionFile,
-                ExamId = request.ExamId,
-                UploadedByUserId = request.UploadedByUserId,
-                Status = SubmissionBatchStatus.PendingExtraction,
-                UploadedAt = DateTime.UtcNow,
-                Notes = request.Notes
-            };
-
-            dbContext.SubmissionBatches.Add(submissionBatch);
-            await dbContext.SaveChangesAsync(cancellationToken);
-
-            return Results.Created($"/submissions/batches/{submissionBatch.Id}", new
-            {
-                submissionBatch.Id,
-                submissionBatch.Status,
-                submissionBatch.UploadedAt,
-                submissionBatch.ExamId,
-                submissionBatch.UploadedByUserId,
-                submissionBatch.Notes,
-                File = new
-                {
-                    submissionFile.Id,
-                    submissionFile.BlobName,
-                    submissionFile.UploadDate
-                }
-            });
+            return uploadResult.Match(
+                response => Results.Created($"/submissions/batches/{response.Id}", response),
+                error => CustomResults.Problem(error));
         })
         .Accepts<UploadSubmissionRequest>("multipart/form-data")
+        .DisableAntiforgery()
         .Produces(StatusCodes.Status201Created)
         .Produces(StatusCodes.Status400BadRequest)
+        .Produces(StatusCodes.Status401Unauthorized)
+        .RequireAuthorization()
         .WithTags("submissions");
+    }
+
+    private static Result<int> GetUserId(ClaimsPrincipal user)
+    {
+        var claim = user.FindFirst("id");
+        if (claim is null)
+        {
+            return Result.Failure<int>(Error.Unauthorized(
+                "Submissions.Upload.UserIdMissing",
+                "User identifier is missing from the token."));
+        }
+
+        if (!int.TryParse(claim.Value, out var userId))
+        {
+            return Result.Failure<int>(Error.Unauthorized(
+                "Submissions.Upload.UserIdInvalid",
+                "User identifier is invalid."));
+        }
+
+        return Result.Success(userId);
     }
 }

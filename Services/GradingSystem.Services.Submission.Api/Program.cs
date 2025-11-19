@@ -44,6 +44,7 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
     });
 }
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileService>();
+builder.Services.AddScoped<ISubmissionUploadService, SubmissionUploadService>();
 builder.Services.AddAuthentication(builder.Configuration);
 builder.WebHost.ConfigureKestrel(options =>
 {
