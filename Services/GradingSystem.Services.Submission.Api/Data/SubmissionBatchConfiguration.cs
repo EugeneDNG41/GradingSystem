@@ -11,12 +11,14 @@ internal sealed class SubmissionBatchConfiguration : IEntityTypeConfiguration<Su
         builder.HasKey(b => b.Id);
 
         builder.Property(b => b.SubmissionFileId).IsRequired();
+        builder.Property(b => b.ExamId).IsRequired();
         builder.Property(b => b.UploadedByUserId).IsRequired();
         builder.Property(b => b.Status).HasConversion<int>().IsRequired();
         builder.Property(b => b.UploadedAt).IsRequired();
         builder.Property(b => b.ProcessedAt);
         builder.Property(b => b.Notes).HasMaxLength(1000);
 
+        builder.HasIndex(b => b.ExamId);
         builder.HasIndex(b => b.UploadedByUserId);
         builder.HasIndex(b => b.Status);
 

@@ -6,6 +6,7 @@ public class SubmissionBatch
     public int SubmissionFileId { get; set; }
     public SubmissionFile SubmissionFile { get; set; } = null!;
 
+    public int ExamId { get; set; }
     public int UploadedByUserId { get; set; }
     public SubmissionBatchStatus Status { get; set; }
     public DateTime UploadedAt { get; set; }
