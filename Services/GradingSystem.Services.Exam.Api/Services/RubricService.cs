@@ -64,5 +64,47 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             return Result.Success();
         }
+        public async Task<Result<RubricResponse>> GetRubricByIdAsync(int id)
+        {
+            var rubric = await _db.Rubrics.FindAsync(id);
+
+            if (rubric is null)
+                return Result.Failure<RubricResponse>(
+                    Error.NotFound("RUB404", "Rubric not found.")
+                );
+
+            return new RubricResponse(
+                rubric.Id,
+                rubric.Criteria,
+                rubric.MaxScore,
+                rubric.OrderIndex,
+                rubric.ExamId
+            );
+        }
+
+        public async Task<Result<List<RubricResponse>>> GetRubricsByExamIdAsync(int examId)
+        {
+            bool examExists = await _db.Exams.AnyAsync(x => x.Id == examId);
+            if (!examExists)
+            {
+                return Result.Failure<List<RubricResponse>>(
+                    Error.NotFound("EXAM40401", "Exam not found.")
+                );
+            }
+
+            var list = await _db.Rubrics
+                .Where(x => x.ExamId == examId)
+                .OrderBy(x => x.OrderIndex)
+                .Select(x => new RubricResponse(
+                    x.Id,
+                    x.Criteria,
+                    x.MaxScore,
+                    x.OrderIndex,
+                    x.ExamId
+                ))
+                .ToListAsync();
+
+            return list;
+        }
     }
 }
