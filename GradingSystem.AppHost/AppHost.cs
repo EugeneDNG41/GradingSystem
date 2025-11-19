@@ -17,8 +17,9 @@ var password = builder.AddParameter("password", secret: true);
 
 var rabbitmq = builder.AddRabbitMQ("rabbitmq", username, password)
                       .WithManagementPlugin();
-
-var blobs = builder.AddAzureStorage("storage").RunAsEmulator(azurite => azurite.WithDataVolume()).AddBlobs("blobs");
+var storage = builder.AddAzureStorage("storage")
+                     .RunAsEmulator(az => az.WithDataVolume());
+var blobContainer = storage.AddBlobs("blobs");
 
 var examService = builder.AddProject<Projects.GradingSystem_Services_Exams_Api>("exams-service")
     .WithReference(examDb)
@@ -29,12 +30,15 @@ var submissionService = builder.AddProject<Projects.GradingSystem_Services_Submi
     .WithReference(submissionDb)
     .WaitFor(submissionDb)
     .WithReference(rabbitmq)
-    .WaitFor(rabbitmq);
+    .WaitFor(rabbitmq)
+    .WithReference(blobContainer); 
+
 var userService = builder.AddProject<Projects.GradingSystem_Services_Users_Api>("users-service")
     .WithReference(userDb)
     .WaitFor(userDb)
     .WithReference(rabbitmq)
-    .WaitFor(rabbitmq);
+    .WaitFor(rabbitmq)
+      .WithReference(blobContainer);
 
 var gateway = builder.AddYarp("gateway")
     .WithHostPort(8080)

@@ -2,7 +2,8 @@ using GradingSystem.Services.Submissions.Api;
 using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Extensions;
 using GradingSystem.Services.Submissions.Api.Services;
-using GradingSystem.Shared.Services.BlobStorage;
+using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Wolverine;
@@ -44,6 +45,15 @@ if (rabbitmqEndpoint != null && submissionsDbConnectionString != null)
 }
 builder.Services.AddScoped<ISubmissionFileService, SubmissionFileService>();
 builder.Services.AddAuthentication(builder.Configuration);
+builder.WebHost.ConfigureKestrel(options =>
+{
+    options.Limits.MaxRequestBodySize = 1024 * 1024 * 500;
+});
+
+builder.Services.Configure<FormOptions>(o =>
+{
+    o.MultipartBodyLengthLimit = 1024L * 1024L * 500L;
+});
 
 var app = builder.Build();
 app.UseSwagger();

@@ -1,6 +1,6 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
 
-namespace GradingSystem.Shared.Services.BlobStorage;
+namespace GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 public static class BlobServiceExtensions
 {
     public static IServiceCollection AddBlobService(

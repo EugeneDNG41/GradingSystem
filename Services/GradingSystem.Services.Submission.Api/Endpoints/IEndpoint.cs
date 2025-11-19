@@ -1,7 +1,7 @@
 ﻿using GradingSystem.Services.Submissions.Api.Extensions;
 using GradingSystem.Services.Submissions.Api.Models;
 using GradingSystem.Services.Submissions.Api.Services;
-using GradingSystem.Shared.Services.BlobStorage;
+using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 
 namespace GradingSystem.Services.Submissions.Api.Endpoints;
 
