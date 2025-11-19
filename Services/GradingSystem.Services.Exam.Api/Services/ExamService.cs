@@ -95,5 +95,49 @@ namespace GradingSystem.Services.Exams.Api.Services
 
             return response;
         }
+        public async Task<Result<List<ExamListItem>>> GetExamListAsync(int? semesterId)
+        {
+            var query = _db.Exams.AsQueryable();
+
+            if (semesterId.HasValue)
+                query = query.Where(x => x.SemesterId == semesterId.Value);
+
+            var exams = await query
+                .OrderBy(e => e.DueDate)
+                .ToListAsync();
+
+            if (exams.Count == 0)
+                return new List<ExamListItem>();
+
+            var semesterIds = exams.Select(e => e.SemesterId).Distinct().ToList();
+
+            var semesters = await _db.Semesters
+                .Where(s => semesterIds.Contains(s.Id))
+                .ToDictionaryAsync(s => s.Id);
+
+            var examinerCounts = await _db.ExamExaminers
+                .GroupBy(x => x.ExamId)
+                .Select(g => new { ExamId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ExamId, x => x.Count);
+
+            var rubricCounts = await _db.Rubrics
+                .GroupBy(r => r.ExamId)
+                .Select(g => new { ExamId = g.Key, Count = g.Count() })
+                .ToDictionaryAsync(x => x.ExamId, x => x.Count);
+
+            var result = exams.Select(e => new ExamListItem(
+                e.Id,
+                e.Title,
+                e.DueDate,
+                e.SemesterId,
+                semesters[e.SemesterId].Name,
+                examinerCounts.ContainsKey(e.Id) ? examinerCounts[e.Id] : 0,
+                rubricCounts.ContainsKey(e.Id) ? rubricCounts[e.Id] : 0
+            )).ToList();
+
+            return result;
+        }
+
+
     }
 }

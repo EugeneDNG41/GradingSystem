@@ -7,6 +7,6 @@ namespace GradingSystem.Services.Exams.Api.Services
     {
         Task<Result<int>> CreateExamAsync(CreateExamRequest request);
         Task<Result<ExamDetailResponse>> GetExamByIdAsync(int id);
-
+        Task<Result<List<ExamListItem>>> GetExamListAsync(int? semesterId);
     }
 }
