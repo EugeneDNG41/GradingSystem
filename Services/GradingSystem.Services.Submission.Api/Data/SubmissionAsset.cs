@@ -8,7 +8,7 @@ public class SubmissionAsset
 
     public string FileName { get; set; } = null!;
     public string MimeType { get; set; } = null!;
-    public byte[] Content { get; set; } = Array.Empty<byte>();
+    public string BlobName { get; set; } = null!;
     public DateTime CreatedAt { get; set; }
 
     public ICollection<SubmissionViolation> LinkedViolations { get; set; } = new List<SubmissionViolation>();

@@ -18,7 +18,7 @@ internal sealed class SubmissionAssetConfiguration : IEntityTypeConfiguration<Su
             .IsRequired()
             .HasMaxLength(128);
 
-        builder.Property(a => a.Content)
+        builder.Property(a => a.BlobName)
             .IsRequired();
 
         builder.Property(a => a.CreatedAt)
