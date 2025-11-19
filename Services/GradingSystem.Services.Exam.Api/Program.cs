@@ -2,6 +2,7 @@ using GradingSystem.Services.Exams.Api;
 using GradingSystem.Services.Exams.Api.Data;
 using GradingSystem.Services.Exams.Api.Extensions;
 using GradingSystem.Services.Exams.Api.Services;
+using GradingSystem.Shared.Contracts;
 using Microsoft.EntityFrameworkCore;
 using System.Reflection;
 using Wolverine;
@@ -30,6 +31,7 @@ if (rabbitmqEndpoint != null && examsDbConnectionString != null)
         //{
         //    exchange.ExchangeType = ExchangeType.Direct;
         //});
+        opts.PublishMessage<ExamCreated>().ToRabbitQueue("submissions-service");
 
         opts.UseRabbitMq(new Uri(rabbitmqEndpoint)).AutoProvision().EnableWolverineControlQueues();
         opts.ListenToRabbitQueue("exams-service");
