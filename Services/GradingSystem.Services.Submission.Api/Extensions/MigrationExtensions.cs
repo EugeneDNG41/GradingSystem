@@ -11,6 +11,16 @@ internal static class MigrationExtensions
 
         using SubmissionsDbContext dbContext =
             scope.ServiceProvider.GetRequiredService<SubmissionsDbContext>();
-        dbContext.Database.Migrate();
+        
+        try
+        {
+            dbContext.Database.Migrate();
+        }
+        catch (Exception ex)
+        {
+            var logger = scope.ServiceProvider.GetRequiredService<ILogger<SubmissionsDbContext>>();
+            logger.LogError(ex, "Error applying migrations");
+            throw;
+        }
     }
 }

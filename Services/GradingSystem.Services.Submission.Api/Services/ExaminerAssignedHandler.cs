@@ -15,21 +15,11 @@ namespace GradingSystem.Services.Submissions.Api.Services
 
         public async Task Handle(ExaminerAssignedToExam message)
         {
-            bool exists = await _db.AssignedExaminers
-                .AnyAsync(x => x.ExamId == message.ExamId
-                            && x.ExaminerId == message.ExaminerId);
-
-            if (exists)
-                return;
-
-            _db.AssignedExaminers.Add(new AssignedExaminer
-            {
-                ExamId = message.ExamId,
-                ExaminerId = message.ExaminerId,
-                AssignedAt = message.AssignedAt
-            });
-
-            await _db.SaveChangesAsync();
+            // Do not create exam-level assignment (SubmissionBatchId = null) in Submissions service
+            // Exam assignment is managed in Exams service only
+            // Batch-level assignments should be created explicitly via /submissions/batches/assign-examiner endpoint
+            // This prevents creating duplicate exam-level assignments when assigning to specific batches
+            await Task.CompletedTask;
         }
     }
 

@@ -21,6 +21,17 @@ builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
 
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 var usersDbConnectionString = builder.Configuration.GetConnectionString("users-db");
 builder.Services.AddDbContext<UsersDbContext>(options => options.UseNpgsql(usersDbConnectionString));
 
@@ -50,6 +61,8 @@ app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
+
+app.UseCors();
 
 app.UseHttpsRedirection();
 

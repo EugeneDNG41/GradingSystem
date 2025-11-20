@@ -1,3 +1,5 @@
+using Aspire.Hosting.Yarp.Transforms;
+
 var builder = DistributedApplication.CreateBuilder(args);
 var postgresUsername = builder.AddParameter("postgresusername", secret: true);
 var postgresPassword = builder.AddParameter("postgrespassword", secret: true);
@@ -41,12 +43,11 @@ var userService = builder.AddProject<Projects.GradingSystem_Services_Users_Api>(
       .WithReference(blobContainer);
 
 var gateway = builder.AddYarp("gateway")
-    .WithHostPort(8080)
     .WithConfiguration(yarp =>
     {
-        yarp.AddRoute("/exams/api/{**catch-all}", examService);
-        yarp.AddRoute("/submissions/api/{**catch-all}", submissionService);
-        yarp.AddRoute("/users/api/{**catch-all}", userService);
+        yarp.AddRoute("/exams-service/{**catch-all}", examService).WithTransformPathRemovePrefix("/exams-service");
+        yarp.AddRoute("/submissions-service/{**catch-all}", submissionService).WithTransformPathRemovePrefix("/submissions-service");
+        yarp.AddRoute("/users-service/{**catch-all}", userService).WithTransformPathRemovePrefix("/users-service");
     });
 
 builder.Build().Run();

@@ -19,6 +19,18 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 var examsDbConnectionString = builder.Configuration.GetConnectionString("exams-db");
 builder.Services.AddDbContext<ExamsDbContext>(options => options.UseNpgsql(examsDbConnectionString));
 
@@ -54,6 +66,8 @@ app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
+
+app.UseCors();
 
 app.UseHttpsRedirection();
 
