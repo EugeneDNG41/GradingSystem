@@ -196,7 +196,7 @@ internal sealed class SubmissionSolutionService(
             .Include(e => e.Assets)
             .FirstOrDefaultAsync(e => e.Id == submissionEntryId, cancellationToken);
 
-        if (entry is null)
+        if (entry is null)  
         {
             return Result.Failure<(SubmissionEntry, SubmissionEntryMetadata, SubmissionAsset)>(Error.NotFound(
                 "SubmissionSolution.EntryMissing",

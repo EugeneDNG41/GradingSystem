@@ -65,6 +65,7 @@ builder.Services.Configure<FormOptions>(o =>
     o.MultipartBodyLengthLimit = 1024L * 1024L * 500L;
 });
 builder.Services.AddScoped<IGradeEntryService, GradeEntryService>();
+builder.Services.AddScoped<IStudentSubmissionService, StudentSubmissionService>();
 
 var app = builder.Build();
 app.UseSwagger();

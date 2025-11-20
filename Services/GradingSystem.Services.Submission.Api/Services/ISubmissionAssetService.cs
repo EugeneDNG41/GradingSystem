@@ -1,10 +1,8 @@
 using GradingSystem.Services.Submissions.Api.Data;
 using GradingSystem.Services.Submissions.Api.Services.BlobStorage;
 using GradingSystem.Shared;
-using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.StaticFiles;
-using System.IO;
-using System.Linq;
+using Microsoft.EntityFrameworkCore;
 
 namespace GradingSystem.Services.Submissions.Api.Services;
 
@@ -156,7 +154,7 @@ internal sealed class SubmissionAssetService(
         string contentType,
         CancellationToken cancellationToken)
     {
-        var blobName = $"submission-assets/{entry.SubmissionBatchId}/{entry.Id}/{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
+        var blobName = $"{Guid.NewGuid():N}{Path.GetExtension(file.FileName)}";
         await using var stream = File.OpenRead(file.OriginalPath);
         await _blobService.UploadAsync(stream, blobName, contentType, cancellationToken);
 
