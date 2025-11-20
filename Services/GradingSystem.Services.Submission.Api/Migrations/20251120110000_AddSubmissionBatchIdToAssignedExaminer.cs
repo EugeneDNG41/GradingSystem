@@ -21,11 +21,6 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
                 nullable: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_AssignedExaminer_Batch_Examiner",
-                table: "assigned_examiners",
-                columns: new[] { "SubmissionBatchId", "ExaminerId" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_AssignedExaminer_SubmissionBatchId",
                 table: "assigned_examiners",
                 column: "SubmissionBatchId");
@@ -58,10 +53,6 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
         {
             migrationBuilder.DropForeignKey(
                 name: "FK_assigned_examiners_SubmissionBatches_SubmissionBatchId",
-                table: "assigned_examiners");
-
-            migrationBuilder.DropIndex(
-                name: "IX_AssignedExaminer_Batch_Examiner",
                 table: "assigned_examiners");
 
             migrationBuilder.DropIndex(
