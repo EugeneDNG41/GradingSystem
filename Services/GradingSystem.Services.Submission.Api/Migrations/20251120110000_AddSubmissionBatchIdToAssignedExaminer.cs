@@ -10,21 +10,25 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "UX_AssignedExaminer_Exam_Examiner",
-                table: "assigned_examiners");
+            // Drop the old unique index if it exists
+            migrationBuilder.Sql(@"
+                DROP INDEX IF EXISTS ""UX_AssignedExaminer_Exam_Examiner"";
+            ");
 
+            // Add SubmissionBatchId column
             migrationBuilder.AddColumn<int>(
                 name: "SubmissionBatchId",
                 table: "assigned_examiners",
                 type: "integer",
                 nullable: true);
 
+            // Create index for SubmissionBatchId
             migrationBuilder.CreateIndex(
                 name: "IX_AssignedExaminer_SubmissionBatchId",
                 table: "assigned_examiners",
                 column: "SubmissionBatchId");
 
+            // Add foreign key
             migrationBuilder.AddForeignKey(
                 name: "FK_assigned_examiners_SubmissionBatches_SubmissionBatchId",
                 table: "assigned_examiners",
@@ -35,14 +39,14 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
 
             // Create partial unique index for ExamId + ExaminerId when SubmissionBatchId is NULL
             migrationBuilder.Sql(@"
-                CREATE UNIQUE INDEX ""UX_AssignedExaminer_Exam_Examiner""
+                CREATE UNIQUE INDEX IF NOT EXISTS ""UX_AssignedExaminer_Exam_Examiner""
                 ON ""assigned_examiners"" (""ExamId"", ""ExaminerId"")
                 WHERE ""SubmissionBatchId"" IS NULL;
             ");
 
             // Create partial unique index for SubmissionBatchId + ExaminerId when SubmissionBatchId is NOT NULL
             migrationBuilder.Sql(@"
-                CREATE UNIQUE INDEX ""UX_AssignedExaminer_Batch_Examiner""
+                CREATE UNIQUE INDEX IF NOT EXISTS ""UX_AssignedExaminer_Batch_Examiner""
                 ON ""assigned_examiners"" (""SubmissionBatchId"", ""ExaminerId"")
                 WHERE ""SubmissionBatchId"" IS NOT NULL;
             ");
@@ -68,11 +72,10 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
             migrationBuilder.Sql(@"DROP INDEX IF EXISTS ""UX_AssignedExaminer_Exam_Examiner"";");
 
             // Restore the old unique constraint
-            migrationBuilder.CreateIndex(
-                name: "UX_AssignedExaminer_Exam_Examiner",
-                table: "assigned_examiners",
-                columns: new[] { "ExamId", "ExaminerId" },
-                unique: true);
+            migrationBuilder.Sql(@"
+                CREATE UNIQUE INDEX IF NOT EXISTS ""UX_AssignedExaminer_Exam_Examiner""
+                ON ""assigned_examiners"" (""ExamId"", ""ExaminerId"");
+            ");
         }
     }
 }
