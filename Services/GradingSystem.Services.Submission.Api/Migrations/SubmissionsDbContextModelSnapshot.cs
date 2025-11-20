@@ -75,6 +75,9 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
                     b.Property<int>("ExaminerId")
                         .HasColumnType("integer");
 
+                    b.Property<int?>("SubmissionBatchId")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("ExamId")
@@ -83,9 +86,11 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
                     b.HasIndex("ExaminerId")
                         .HasDatabaseName("IX_AssignedExaminer_ExaminerId");
 
-                    b.HasIndex("ExamId", "ExaminerId")
-                        .IsUnique()
-                        .HasDatabaseName("UX_AssignedExaminer_Exam_Examiner");
+                    b.HasIndex("SubmissionBatchId")
+                        .HasDatabaseName("IX_AssignedExaminer_SubmissionBatchId");
+
+                    b.HasIndex("SubmissionBatchId", "ExaminerId")
+                        .HasDatabaseName("IX_AssignedExaminer_Batch_Examiner");
 
                     b.ToTable("assigned_examiners", (string)null);
                 });
@@ -346,6 +351,16 @@ namespace GradingSystem.Services.Submissions.Api.Migrations
                         .IsRequired();
 
                     b.Navigation("SubmissionEntry");
+                });
+
+            modelBuilder.Entity("GradingSystem.Services.Submissions.Api.Data.AssignedExaminer", b =>
+                {
+                    b.HasOne("GradingSystem.Services.Submissions.Api.Data.SubmissionBatch", "SubmissionBatch")
+                        .WithMany()
+                        .HasForeignKey("SubmissionBatchId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("SubmissionBatch");
                 });
 
             modelBuilder.Entity("GradingSystem.Services.Submissions.Api.Data.SubmissionAsset", b =>

@@ -120,6 +120,48 @@ namespace GradingSystem.Services.Submissions.Api.Services
             return Result.Success(list);
         }
 
+        public async Task<Result<GradeEntryResponse>> UpdateAsync(int id, UpdateGradeEntryRequest request, int examinerId)
+        {
+            var grade = await _db.GradeEntries
+                .Include(g => g.SubmissionEntry)
+                .ThenInclude(e => e.SubmissionBatch)
+                .FirstOrDefaultAsync(g => g.Id == id);
+
+            if (grade is null)
+            {
+                return Result.Failure<GradeEntryResponse>(Error.NotFound(
+                    "GRD404", "Grade entry not found."
+                ));
+            }
+
+            // Check if examiner owns this grade entry
+            if (grade.ExaminerId != examinerId)
+            {
+                return Result.Failure<GradeEntryResponse>(Error.Forbidden(
+                    "FORBIDDEN", "You are not allowed to update this grade entry."
+                ));
+            }
+
+            // Update grade entry
+            grade.Score = request.Score;
+            grade.Notes = request.Notes;
+            grade.GradedAt = DateTime.UtcNow;
+
+            // Update temporary score in submission entry
+            grade.SubmissionEntry.TemporaryScore = request.Score;
+
+            await _db.SaveChangesAsync();
+
+            return new GradeEntryResponse(
+                grade.Id,
+                grade.SubmissionEntryId,
+                grade.ExaminerId,
+                grade.Score,
+                grade.Notes,
+                grade.GradedAt
+            );
+        }
+
     }
 
 }

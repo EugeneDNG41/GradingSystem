@@ -22,6 +22,18 @@ builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
 builder.Services.AddProblemDetails();
 
 builder.Services.AddSwaggerDocumentation().AddEndpoints(Assembly.GetExecutingAssembly());
+
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(policy =>
+    {
+        policy.WithOrigins("http://localhost:3000")
+              .AllowAnyMethod()
+              .AllowAnyHeader()
+              .AllowCredentials();
+    });
+});
+
 builder.AddAzureBlobServiceClient("blobs");
 
 builder.Services.AddBlobService();
@@ -65,6 +77,7 @@ builder.Services.Configure<FormOptions>(o =>
     o.MultipartBodyLengthLimit = 1024L * 1024L * 500L;
 });
 builder.Services.AddScoped<IGradeEntryService, GradeEntryService>();
+builder.Services.AddScoped<ISubmissionBatchService, SubmissionBatchService>();
 
 var app = builder.Build();
 app.UseSwagger();
@@ -73,6 +86,8 @@ app.ApplyMigrations();
 app.UseExceptionHandler();
 app.MapDefaultEndpoints();
 // Configure the HTTP request pipeline.
+
+app.UseCors();
 
 app.UseHttpsRedirection();
 

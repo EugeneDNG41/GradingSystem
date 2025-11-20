@@ -19,6 +19,7 @@ namespace GradingSystem.Services.Submissions.Api.Endpoints
                     CustomResults.Problem
                 );
             })
+            .RequireAuthorization()
             .WithTags("grading");
         }
     }
